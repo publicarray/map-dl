@@ -6,7 +6,7 @@
     <title>Google Maps Grid</title>
     <style>
       html, body {
-        font-family: sans-serif;
+        font-family: Roboto, Arial, sans-serif;
         height: 100%;
         margin: 0;
         padding: 0;
@@ -14,20 +14,32 @@
       #map {
         height: 100%;
       }
+      #UI {
+        position: absolute;
+        user-select: none;
+        top: 10px;
+        left: 120px;
+        z-index: 9;
+      }
       .btn {
         padding: 5px;
-        background: #F07C00;
+        background: #fff;
+        border-radius: 2px;
         display: inline-block;
+        text-align: center;
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px;
+        min-width: 39px;
         cursor: pointer;
       }
-      .btn:hover {
-        background: #C35E00;
+      .btn: hover {
+        background: #eee;
       }
     </style>
   </head>
   <body>
     <div id="UI">
       <div class="btn" id="exportBtn">Export</div>
+      <div class="btn" id="gridBtn">Grid</div>
     </div>
     <div id="map"></div>
     <script>
@@ -47,9 +59,9 @@
         //   trafficLayer.setMap(map);
         // });
 
-      var map;
+      var map, infowindow;
       function initMap() {
-          map = new google.maps.Map(document.getElementById('map'), {
+        map = new google.maps.Map(document.getElementById('map'), {
           zoom: 13,
           center: {lat: -27.938433, lng: 153.407170},
           mapTypeId: 'satellite'
@@ -61,6 +73,7 @@
           //   }]
         });
 
+        infowindow = new google.maps.InfoWindow();
         // var GridCoordinates = [
         //     {lat: 37.772, lng: -122.214},
         //     {lat: 21.291, lng: -157.821},
@@ -86,6 +99,7 @@
         //   map: map
         // });
 
+// https://developers.google.com/maps/documentation/directions/intro#traffic-model
         // var trafficLayer = new google.maps.TrafficLayer();
         // console.log(google.maps.TrafficLayer);
         // console.log(new google.maps.TrafficLayer());
@@ -127,6 +141,83 @@
       }
 
 
+
+
+
+
+// GRID
+      var gridBtn = document.getElementById('gridBtn');
+      gridBtn.addEventListener('click', function (e) {
+        drawRects();
+      });
+
+      var rectArr=[];
+      var cols=["red","blue","green","yellow","orange","gray"]
+
+      function drawRects() {
+        var size = 1000 // 1 per km
+        // var size = 2000
+        var bounds = map.getBounds();
+
+        var NE = bounds.getNorthEast();
+        var SW = bounds.getSouthWest();
+        var NW = new google.maps.LatLng(NE.lat(), SW.lng());
+        var SE = new google.maps.LatLng(SW.lat(), NW.lng());
+
+        console.log('NE', NE.toJSON());
+        console.log('SW', SW.toJSON());
+        console.log('NW', NW.toJSON());
+        console.log('SE', NW.toJSON());
+
+        var height = google.maps.geometry.spherical.computeDistanceBetween(NW, SW)/size;
+        var width = google.maps.geometry.spherical.computeDistanceBetween(NW, NE)/size;
+        console.log('height', height); // in km
+        console.log('width', width); // in km
+
+        var NS = google.maps.geometry.spherical.computeOffset(NW, size, 90)
+        var SS = google.maps.geometry.spherical.computeOffset(NW, size, 180)
+
+        for (var i = 0; i < height; i++) {
+          NE = google.maps.geometry.spherical.computeOffset(NS, i*size, 180)
+          SW = google.maps.geometry.spherical.computeOffset(SS, i*size, 180)
+          for (var a = 0; a < width; a++) {
+            var rectangle = new google.maps.Rectangle();
+            var rectOptions = {
+                  strokeColor: "#FF0000",
+                  strokeOpacity: 0.8,
+                  strokeWeight: 1,
+                  // fillColor: cols[Math.floor(Math.random()*cols.length)],
+                  fillOpacity: 0,
+                  map: map,
+                  bounds: new google.maps.LatLngBounds(SW,NE)
+                };
+                rectangle.setOptions(rectOptions);
+              rectArr.push(rectangle);
+              bindWindow(rectangle, rectArr.length) // add event handler
+
+            var SW = google.maps.geometry.spherical.computeOffset(SW, size, 90)
+            var NE = google.maps.geometry.spherical.computeOffset(NE, size, 90)
+          }
+        }
+      }
+
+      function bindWindow(rectangle, num) {
+        google.maps.event.addListener(rectangle, 'click', function(event) {
+          infowindow.setContent("you clicked on rectangle "+num)
+          infowindow.setPosition(event.latLng)
+          infowindow.open(map);
+          console.log(rectangle.getBounds().getCenter().toString());
+          download('https://maps.googleapis.com/maps/api/staticmap?center='+rectangle.getBounds().getCenter().toUrlValue()+'&zoom=16&format=png&maptype=satellite&size=500x500&scale=1'+'&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY')
+        });
+      }
+
+
+
+
+
+
+// EXPORT
+
       var exportBtn = document.getElementById('exportBtn');
       exportBtn.addEventListener('click', function (e) {
         var bounds = map.getBounds();
@@ -138,17 +229,17 @@
         console.log(center.lat());
         console.log(center.lng());
         var staticmapURL = 'https://maps.googleapis.com/maps/api/staticmap';
-        var parametersURL = '?center='+center.lat()+','+center.lng()+'&zoom='+zoom+'&format=png&maptype=satellite&size=800x800&scale=1'+'&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY';
+        var parametersURL = '?center='+center.toUrlValue()+'&zoom='+zoom+'&format=png&maptype=satellite&size=800x800&scale=1'+'&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY'; // timestamp
 
         // download(staticmapURL+parametersURL);
-        var request = new XMLHttpRequest();
+        var request = new XMLHttpRequest(); // http://youmightnotneedjquery.com/ // IE9+
         request.open('GET', staticmapURL+parametersURL, true);
         request.responseType = 'blob';
         request.onload = function(e) {
           if (request.status >= 200 && request.status < 400) {
             // Success!
             // download(e.target.response, "staticmap.png", "image/png")
-            download(e.target.response, "staticmap.png")
+            download(e.target.response, "staticmap.png") // https://github.com/rndme/download
           } else {
             // We reached our target server, but it returned an error
             console.error("ajax: server errored");
@@ -165,7 +256,7 @@
 
     </script>
     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=drawing"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
     <script async defer src="download.js"></script>
   </body>
 </html>
