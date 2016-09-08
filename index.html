@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Google Maps Grid</title>
+    <style>
+      html, body {
+        font-family: sans-serif;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+      .btn {
+        padding: 5px;
+        background: #F07C00;
+        display: inline-block;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background: #C35E00;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="UI">
+      <div class="btn" id="exportBtn">Export</div>
+    </div>
+    <div id="map"></div>
+    <script>
+        // $(function() {
+        //   var map = new google.maps.Map(document.getElementById("map"), {
+        //     zoom: 12,
+        //     center: new google.maps.LatLng(34.0204989, -118.4117325),
+        //     mapTypeId: google.maps.MapTypeId.ROADMAP,
+        //     disableDoubleClickZoom: true,
+        //     draggable: false,
+        //     scrollwheel: false,
+        //     panControl: false,
+        //     disableDefaultUI: true,
+        //   });
+
+        //   var trafficLayer = new google.maps.TrafficLayer();
+        //   trafficLayer.setMap(map);
+        // });
+
+      var map;
+      function initMap() {
+          map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 13,
+          center: {lat: -27.938433, lng: 153.407170},
+          mapTypeId: 'satellite'
+          // disableDefaultUI: true,
+          // styles: [{
+          //     "stylers": [{
+          //       "visibility": "off"
+          //     }]
+          //   }]
+        });
+
+        // var GridCoordinates = [
+        //     {lat: 37.772, lng: -122.214},
+        //     {lat: 21.291, lng: -157.821},
+        //     {lat: -18.142, lng: 178.431},
+        //     {lat: -27.467, lng: 153.027}
+        // ];
+
+        // var line = new google.maps.Polyline({
+        //     path: [{lat: -27.938433, lng: 153.40710}, {lat: -27, lng: 153.407170}],
+        //     strokeColor: '#fff',
+        //     strokeOpacity: 1.0,
+        //     strokeWeight: 2
+        // });
+
+        // line.setMap(map);
+
+        // var line = new google.maps.Polyline({
+        //   path: [{lat: -27.938433, lng: 153.40710}, {lat: -27, lng: 153.407170}],
+        //   // geodesic: true,
+        //   strokeOpacity: 1,
+        //   strokeColor: '#fff',
+        //   strokeWeight: 2,
+        //   map: map
+        // });
+
+        // var trafficLayer = new google.maps.TrafficLayer();
+        // console.log(google.maps.TrafficLayer);
+        // console.log(new google.maps.TrafficLayer());
+        // trafficLayer.setMap(map);
+        // trafficLayer.getMap(map);
+        // console.log(trafficLayer.getMap(map));
+
+        // function updateTrafficOnMap() {
+        //     var trafficLayer = new google.maps.TrafficLayer();
+        //     trafficLayer.setMap(map);
+        //     console.log('Traffic Update!');
+        // };
+        // updateTrafficOnMap();
+        // setInterval(updateTrafficOnMap, 30000);
+        // var drawingManager = new google.maps.drawing.DrawingManager({
+        //   // drawingMode: google.maps.drawing.OverlayType.RECTANGLE,
+        //   drawingControl: true,
+        //   drawingControlOptions: {
+        //     position: google.maps.ControlPosition.TOP_CENTER,
+        //     drawingModes: [ 'rectangle']
+        //   },
+        //   rectangleOptions: {
+        //     // fillColor: '#ffff00',
+        //     // fillOpacity: 1,
+        //     // strokeWeight: 5,
+        //     clickable: true,
+        //     editable: true,
+        //     zIndex: 1
+        //   }
+        // });
+        // drawingManager.setMap(map);
+
+
+        // google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
+        //   if (event.type == 'rectangle') {
+        //     var radius = event.overlay.getRadius();
+        //   }
+        // });
+      }
+
+
+      var exportBtn = document.getElementById('exportBtn');
+      exportBtn.addEventListener('click', function (e) {
+        var bounds = map.getBounds();
+        var center = map.getCenter();
+        var zoom = map.getZoom();
+        console.log(bounds.toJSON());
+        console.log(center.toJSON());
+        console.log(zoom);
+        console.log(center.lat());
+        console.log(center.lng());
+        var staticmapURL = 'https://maps.googleapis.com/maps/api/staticmap';
+        var parametersURL = '?center='+center.lat()+','+center.lng()+'&zoom='+zoom+'&format=png&maptype=satellite&size=800x800&scale=1'+'&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY';
+
+        // download(staticmapURL+parametersURL);
+        var request = new XMLHttpRequest();
+        request.open('GET', staticmapURL+parametersURL, true);
+        request.responseType = 'blob';
+        request.onload = function(e) {
+          if (request.status >= 200 && request.status < 400) {
+            // Success!
+            // download(e.target.response, "staticmap.png", "image/png")
+            download(e.target.response, "staticmap.png")
+          } else {
+            // We reached our target server, but it returned an error
+            console.error("ajax: server errored");
+          }
+        };
+
+        request.onerror = function() {
+          // There was a connection error of some sort
+          console.error("ajax: can't connect to server!");
+        };
+
+        request.send();
+      });
+
+    </script>
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=drawing"></script>
+    <script async defer src="download.js"></script>
+  </body>
+</html>
