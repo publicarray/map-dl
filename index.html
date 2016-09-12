@@ -152,53 +152,112 @@
       });
 
       var rectArr=[];
-      var cols=["red","blue","green","yellow","orange","gray"]
+      var cols=["red","blue","green","yellow","orange","gray"];
 
       function drawRects() {
         var size = 1000 // 1 per km
         // var size = 2000
         var bounds = map.getBounds();
-
+        var boundsJ = bounds.toJSON();
+        console.log(boundsJ);
         var NE = bounds.getNorthEast();
         var SW = bounds.getSouthWest();
         var NW = new google.maps.LatLng(NE.lat(), SW.lng());
-        var SE = new google.maps.LatLng(SW.lat(), NW.lng());
+        var SE = new google.maps.LatLng(SW.lat(), NE.lng());
 
         console.log('NE', NE.toJSON());
         console.log('SW', SW.toJSON());
         console.log('NW', NW.toJSON());
-        console.log('SE', NW.toJSON());
+        console.log('SE', SE.toJSON());
 
         var height = google.maps.geometry.spherical.computeDistanceBetween(NW, SW)/size;
         var width = google.maps.geometry.spherical.computeDistanceBetween(NW, NE)/size;
         console.log('height', height); // in km
         console.log('width', width); // in km
 
-        var NS = google.maps.geometry.spherical.computeOffset(NW, size, 90)
-        var SS = google.maps.geometry.spherical.computeOffset(NW, size, 180)
-
+        var NtoS = boundsJ.north - boundsJ.south;
+        var EtoW = boundsJ.east - boundsJ.west;
         for (var i = 0; i < height; i++) {
-          NE = google.maps.geometry.spherical.computeOffset(NS, i*size, 180)
-          SW = google.maps.geometry.spherical.computeOffset(SS, i*size, 180)
-          for (var a = 0; a < width; a++) {
-            var rectangle = new google.maps.Rectangle();
-            var rectOptions = {
-                  strokeColor: "#FF0000",
-                  strokeOpacity: 0.8,
-                  strokeWeight: 1,
-                  // fillColor: cols[Math.floor(Math.random()*cols.length)],
-                  fillOpacity: 0,
-                  map: map,
-                  bounds: new google.maps.LatLngBounds(SW,NE)
+            for (var j = 0; j < width; j++) {
+
+                var north = ((NtoS/height)*i);
+                var south = ((NtoS/height)*(i+1));
+                var east = ((EtoW/width)*j);
+                var west = ((EtoW/width)*(j+1));
+
+                if (north < 0) {
+                    north = boundsJ.north+north;
+                } else {
+                    north = boundsJ.north-north;
+                }
+
+                if (south < 0) {
+                    south = boundsJ.north+south;
+                } else {
+                    south = boundsJ.north-south;
+                }
+
+                if (east < 0) {
+                    east = boundsJ.east+east;
+                } else {
+                    east = boundsJ.east-east;
+                }
+
+                if (west < 0) {
+                    west = boundsJ.east+west;
+                } else {
+                    west = boundsJ.east-west;
+                }
+
+                var grid = new google.maps.LatLngBounds({lat: south, lng: west}, {lat: north, lng: east});
+                console.log(grid.toString());
+
+                var rectangle = new google.maps.Rectangle();
+                var rectOptions = {
+                      strokeColor: "#00FF00",
+                      strokeOpacity: 0.8,
+                      strokeWeight: 1,
+                      fillOpacity: 0,
+                      map: map,
+                      bounds: grid
                 };
                 rectangle.setOptions(rectOptions);
-              rectArr.push(rectangle);
-              bindWindow(rectangle, rectArr.length) // add event handler
-
-            var SW = google.maps.geometry.spherical.computeOffset(SW, size, 90)
-            var NE = google.maps.geometry.spherical.computeOffset(NE, size, 90)
-          }
+                rectArr.push(rectangle);
+                bindWindow(rectangle, rectArr.length); // add event handler
+            }
         }
+
+// OLD
+
+        // var NS = google.maps.geometry.spherical.computeOffset(NW, size, 90);
+        // var SS = google.maps.geometry.spherical.computeOffset(NW, size, 180);
+        // console.log(NS.toString(), SS.toString());
+
+        // for (var i = 0; i < height; i++) {
+        //   NE = google.maps.geometry.spherical.computeOffset(NS, i*size, 180);
+        //   SW = google.maps.geometry.spherical.computeOffset(SS, i*size, 180);
+
+        //   console.log(NE.toString(), SW.toString());
+        //   for (var a = 0; a < width; a++) {
+        //     var rectangle = new google.maps.Rectangle();
+        //     var rectOptions = {
+        //           strokeColor: "#FF0000",
+        //           strokeOpacity: 0.8,
+        //           strokeWeight: 1,
+        //           // fillColor: cols[Math.floor(Math.random()*cols.length)],
+        //           fillOpacity: 0,
+        //           map: map,
+        //           bounds: new google.maps.LatLngBounds(SW,NE)
+        //         };
+        //         rectangle.setOptions(rectOptions);
+        //       rectArr.push(rectangle);
+        //       bindWindow(rectangle, rectArr.length) // add event handler
+
+        //     var SW = google.maps.geometry.spherical.computeOffset(SW, size, 90)
+        //     var NE = google.maps.geometry.spherical.computeOffset(NE, size, 90)
+        //   }
+        // }
+//END
       }
 
       function bindWindow(rectangle, num) {
@@ -256,7 +315,7 @@
 
     </script>
     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
     <script async defer src="download.js"></script>
   </body>
 </html>
