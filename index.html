@@ -177,6 +177,7 @@
 
         var NtoS = boundsJ.north - boundsJ.south;
         var EtoW = boundsJ.east - boundsJ.west;
+var t00 = performance.now();
         for (var i = 0; i < height; i++) {
             for (var j = 0; j < width; j++) {
 
@@ -210,7 +211,7 @@
                 }
 
                 var grid = new google.maps.LatLngBounds({lat: south, lng: west}, {lat: north, lng: east});
-                console.log(grid.toString());
+                // console.log(grid.toString());
 
                 var rectangle = new google.maps.Rectangle();
                 var rectOptions = {
@@ -224,9 +225,12 @@
                 rectangle.setOptions(rectOptions);
                 rectArr.push(rectangle);
                 bindWindow(rectangle, rectArr.length); // add event handler
+
             }
         }
-
+var t01 = performance.now();
+console.log("Call to green took " + (t01 - t00) + " milliseconds.");
+var t0 = performance.now();
 // OLD
 
         // var NS = google.maps.geometry.spherical.computeOffset(NW, size, 90);
@@ -257,6 +261,8 @@
         //     var NE = google.maps.geometry.spherical.computeOffset(NE, size, 90)
         //   }
         // }
+var t1 = performance.now();
+console.log("Call to red took " + (t1 - t0) + " milliseconds.");
 //END
       }
 
