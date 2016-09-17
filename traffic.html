@@ -52,11 +52,15 @@
     <script>
     var isVisable = true;
     var map;
+
     function initMap() {
         var gMapOptions = {
             zoom: 12,
             backgroundColor: 'transparent',
-            center: {lat: -27.938433, lng: 153.407170}, // Gold Coast
+            center: { // Gold Coast
+                lat: -27.938433,
+                lng: 153.407170
+            },
             mapTypeId: google.maps.MapTypeId.ROADMAP,
         }
 
@@ -75,10 +79,13 @@
         html2canvas(document.body, {
             useCORS: true,
             background: undefined, // transparent
-            onrendered: function(canvas) {
+            onrendered: function (canvas) {
                 toggleUI();
-                var img = canvas.toDataURL('image/png');
-                download(img, 'file.png', 'image/png');
+                // var img = canvas.toDataURL('image/png');
+                // download(img, 'file.png', 'image/png');
+                canvas.toBlob(function (blob) {
+                    download(blob, 'file.png', 'image/png');
+                }, 'image/png');
             }
         });
     };
@@ -104,6 +111,33 @@
             }]
         });
     }
+
+    // FireFox
+    if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+        console.warn("FireFox makes grainy images. We recommend a different browser.");
+    }
+
+    // canvasToBlobPollyfill
+    if (!HTMLCanvasElement.prototype.toBlob) {
+        console.warn("Using Canvas.ToBlob() Pollyfill");
+        Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+            value: function(callback, type, quality) {
+
+                var binStr = atob(this.toDataURL(type, quality).split(',')[1]),
+                    len = binStr.length,
+                    arr = new Uint8Array(len);
+
+                for (var i = 0; i < len; i++) {
+                    arr[i] = binStr.charCodeAt(i);
+                }
+
+                callback(new Blob([arr], {
+                    type: type || 'image/png'
+                }));
+            }
+        });
+    }
+
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
     <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
