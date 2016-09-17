@@ -46,7 +46,7 @@
 <body>
     <div id="UI">
         <div class="btn" id="exportBtn">Screen Shot</div>
-        <div class="btn" id="toggleUI">Toggle UI</div>
+        <div class="btn" id="toggleUIBtn">Toggle UI</div>
     </div>
     <div id="map"></div>
     <script>
@@ -65,11 +65,12 @@
     };
 
     var exportBtn = document.getElementById('exportBtn');
-    var toggleUI = document.getElementById('toggleUI');
+    var toggleUIBtn = document.getElementById('toggleUIBtn');
     exportBtn.addEventListener('click', screenshot);
-    toggleUI.addEventListener('click', toogleMapUI);
+    toggleUIBtn.addEventListener('click', toogleMapUI);
 
     function screenshot() {
+        toggleUI();
         html2canvas(document.body, {
             useCORS: true,
             onrendered: function(canvas) {
@@ -82,9 +83,15 @@
                 link.href = dlimg;
                 link.draggable = true;
                 link.click();
+                toggleUI();
             }
         });
     };
+
+    function toggleUI() {
+        var UI = document.getElementById('UI');
+        UI.style.visibility = UI.style.visibility == "hidden" ? "visible" : "hidden";
+    }
 
     function toogleMapUI() {
         isVisable = !isVisable;
