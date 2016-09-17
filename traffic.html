@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Google Maps Traffic</title>
+    <style>
+    html,
+    body {
+        font-family: Roboto, Arial, sans-serif;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    #map {
+        height: 100%;
+    }
+
+    #UI {
+        position: absolute;
+        user-select: none;
+        top: 10px;
+        left: 120px;
+        z-index: 9;
+    }
+
+    .btn {
+        padding: 5px;
+        background: #fff;
+        border-radius: 2px;
+        display: inline-block;
+        text-align: center;
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px;
+        min-width: 39px;
+        cursor: pointer;
+    }
+
+    .btn: hover {
+        background: #eee;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="UI">
+        <div class="btn" id="exportBtn">Screen Shot</div>
+        <div class="btn" id="toggleUI">Toggle UI</div>
+    </div>
+    <div id="map"></div>
+    <script>
+    var isVisable = true;
+    var map;
+    function initMap() {
+        var gMapOptions = {
+            zoom: 12,
+            center: {lat: -27.938433, lng: 153.407170}, // Gold Coast
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+        }
+
+        map = new google.maps.Map(document.getElementById("map"), gMapOptions);
+        var trafficLayer = new google.maps.TrafficLayer();
+        trafficLayer.setMap(map);
+    };
+
+    var exportBtn = document.getElementById('exportBtn');
+    var toggleUI = document.getElementById('toggleUI');
+    exportBtn.addEventListener('click', screenshot);
+    toggleUI.addEventListener('click', toogleMapUI);
+
+    function screenshot() {
+        html2canvas(document.body, {
+            useCORS: true,
+            onrendered: function(canvas) {
+                var img = canvas.toDataURL('image/png');
+                var dlimg = img.replace(/^data:image\/[^;]/, 'data:image/octet-stream');
+
+                // hacky way to specify a file name
+                var link = document.createElement('a');
+                link.download = 'traffic-layer.png';
+                link.href = dlimg;
+                link.draggable = true;
+                link.click();
+            }
+        });
+    };
+
+    function toogleMapUI() {
+        isVisable = !isVisable;
+        console.log(isVisable);
+        var visability = isVisable ? "on" : "off";
+        map.setOptions({
+            // disableDoubleClickZoom: true,
+            // draggable: false,
+            // scrollwheel: false,
+            // panControl: false,
+            disableDefaultUI: !isVisable,
+            styles: [{
+                "stylers": [{
+                    "visibility": visability,
+                }]
+            }]
+        });
+    }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
+    <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+</body>
+
+</html>

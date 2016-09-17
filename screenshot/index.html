@@ -1,0 +1,76 @@
+<html>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <button id="dl">Download Canvas</button>
+    <script>
+    var tick = 0;
+    var rate = 0.1;
+    var rainbowBackground = function() {
+        setInterval(function() {
+            tick = tick + rate;
+            var red = Math.sin(tick) * 127 + 128;
+            var green = Math.sin(tick + 90) * 127 + 128;
+            var blue = Math.sin(tick + 270) * 127 + 128;
+            red = parseInt(red);
+            green = parseInt(green);
+            blue = parseInt(blue);
+            document.body.style.backgroundColor = "rgb(" + red + "," + green + "," + blue + ")";
+        }, 50);
+    };
+    rainbowBackground();
+
+    document.getElementById('dl').addEventListener('click', screenshot, false);
+
+    function screenshot() {
+        if (typeof html2canvas == 'undefined') {
+            console.info("Downloading html2canvas.js now... Try again later.");
+            var script = document.createElement('script');
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js";
+            var head = document.getElementsByTagName('head')[0];
+            head.appendChild(script);
+            // wait
+            // while (typeof html2canvas == 'undefined') {
+            //     //
+            return;
+        }
+        html2canvas(document.body, {
+            // proxy: 'localhost:3000',
+            // useCORS: true,
+            // allowTaint: true,
+            onrendered: function(canvas) {
+                try {
+                    // var img = canvas.toDataURL('image/jpg', 0.9);
+                    var img = canvas.toDataURL('image/png');
+                } catch (e) {
+                    var img = canvas.toDataURL();
+                }
+
+                var dlimg = img.replace(/^data:image\/[^;]/, 'data:image/octet-stream');
+                // window.location.assign(dlimg);
+                // window.location.assign(img);
+
+                // img = img.replace(/^data:image\/(png|jpg);base64,/, "");
+                img = img.split(',')[1];
+                img = window.atob(img);
+                // var blob = new Blob([img], {type: 'image/png'});
+                // url = window.URL.createObjectURL(blob);
+                // window.location.assign(url);
+
+                // hacky way to specify a file name
+                var link = document.createElement('a');
+                link.download = 'snapshot.png';
+                link.href = dlimg;
+                // link.href = url;
+                link.draggable = true;
+                link.click();
+
+                // window.URL.revokeObjectURL(url);
+            }
+        });
+    };
+
+    </script>
+</body>
+
+</html>

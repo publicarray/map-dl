@@ -1,0 +1,43 @@
+<html>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <img id="output" src="" alt="">
+    <script>
+    var tick = 0;
+    var rate = 0.1;
+    var rainbowBackground = function() {
+        setInterval(function() {
+            tick = tick + rate;
+            var red = Math.sin(tick) * 127 + 128;
+            var green = Math.sin(tick + 90) * 127 + 128;
+            var blue = Math.sin(tick + 270) * 127 + 128;
+            red = parseInt(red);
+            green = parseInt(green);
+            blue = parseInt(blue);
+            document.body.style.backgroundColor = "rgb(" + red + "," + green + "," + blue + ")";
+        }, 50);
+    };
+    rainbowBackground();
+
+
+    function screen(callback) {
+        var image = document.getElementById('output');
+        image.setAttribute('crossOrigin', 'anonymous');
+        html2canvas(document.body, {
+            onrendered: function(canvas) {
+                try {
+                    image.src = canvas.toDataURL('image/png');
+                } catch (e) {
+                    image.src = canvas.toDataURL();
+                }
+                // next frame
+                screen();
+            }
+        });
+    }
+    screen();
+    </script>
+</body>
+
+</html>
