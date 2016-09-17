@@ -1,27 +1,38 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <meta charset="utf-8">
     <title>Google Maps Grid</title>
     <style>
-      html, body {
+    html,
+    body {
         font-family: Roboto, Arial, sans-serif;
         height: 100%;
         margin: 0;
         padding: 0;
-      }
-      #map {
+    }
+
+    #map {
         height: 100%;
-      }
-      #UI {
+    }
+
+    #UI {
         position: absolute;
         user-select: none;
         top: 10px;
         left: 120px;
         z-index: 9;
+    }
+
+    #coords {
+        background-color: black;
+        color: white;
+        padding: 5px;
       }
-      .btn {
+
+    .btn {
         padding: 5px;
         background: #fff;
         border-radius: 2px;
@@ -30,261 +41,266 @@
         box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px;
         min-width: 39px;
         cursor: pointer;
-      }
-      .btn: hover {
+    }
+
+    .btn: hover {
         background: #eee;
-      }
+    }
     </style>
-  </head>
-  <body>
+</head>
+
+<body>
     <div id="UI">
-      <div class="btn" id="exportBtn">Export</div>
-      <div class="btn" id="gridBtn">Grid</div>
+        <div class="btn" id="exportBtn">Export</div>
+        <div class="btn" id="gridBtn">Grid</div>
+        <span><input type="number" class="" id="scaleInput" min="1" max="100" step="1" value="1"></input> Km</span>
+        <!-- <div class="btn" id="gridBtn2">Grid2</div> -->
     </div>
     <div id="map"></div>
+    <div id="coords"></div>
     <script>
-        // $(function() {
-        //   var map = new google.maps.Map(document.getElementById("map"), {
-        //     zoom: 12,
-        //     center: new google.maps.LatLng(34.0204989, -118.4117325),
-        //     mapTypeId: google.maps.MapTypeId.ROADMAP,
-        //     disableDoubleClickZoom: true,
-        //     draggable: false,
-        //     scrollwheel: false,
-        //     panControl: false,
-        //     disableDefaultUI: true,
-        //   });
+    var APIKEY = 'AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY';
+    var map, infowindow;
 
-        //   var trafficLayer = new google.maps.TrafficLayer();
-        //   trafficLayer.setMap(map);
-        // });
-
-      var map, infowindow;
-      function initMap() {
+    function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
-          zoom: 13,
-          center: {lat: -27.938433, lng: 153.407170},
-          mapTypeId: 'satellite'
-          // disableDefaultUI: true,
-          // styles: [{
-          //     "stylers": [{
-          //       "visibility": "off"
-          //     }]
-          //   }]
+            zoom: 13,
+            center: {
+                lat: -27.938433,
+                lng: 153.407170
+            },
+            mapTypeId: 'satellite'
         });
 
         infowindow = new google.maps.InfoWindow();
-        // var GridCoordinates = [
-        //     {lat: 37.772, lng: -122.214},
-        //     {lat: 21.291, lng: -157.821},
-        //     {lat: -18.142, lng: 178.431},
-        //     {lat: -27.467, lng: 153.027}
-        // ];
+        maxZoomService = new google.maps.MaxZoomService();
 
-        // var line = new google.maps.Polyline({
-        //     path: [{lat: -27.938433, lng: 153.40710}, {lat: -27, lng: 153.407170}],
-        //     strokeColor: '#fff',
-        //     strokeOpacity: 1.0,
-        //     strokeWeight: 2
-        // });
+         // Show the lat and lng under the mouse cursor.
+        var coordsDiv = document.getElementById('coords');
+        map.controls[google.maps.ControlPosition.TOP_CENTER].push(coordsDiv);
+        map.addListener('mousemove', function(event) {
+          coordsDiv.textContent =
+              'lat: ' + Math.round(event.latLng.lat() * 1000) / 1000 + ', ' +
+              'lng: ' + Math.round(event.latLng.lng() * 1000) / 1000;
+        });
+    }
 
-        // line.setMap(map);
+    var rectArr = [];
+    var rectArr2 = [];
 
-        // var line = new google.maps.Polyline({
-        //   path: [{lat: -27.938433, lng: 153.40710}, {lat: -27, lng: 153.407170}],
-        //   // geodesic: true,
-        //   strokeOpacity: 1,
-        //   strokeColor: '#fff',
-        //   strokeWeight: 2,
-        //   map: map
-        // });
+    // GRID Buttons
+    var gridVisable = false;
+    var listenerDrag, listenerZoom;
+    var gridBtn = document.getElementById('gridBtn');
+    gridBtn.addEventListener('click', function(e) {
+        gridUpdate();
+        if (gridVisable == false) {
+            listenerDrag = map.addListener('dragend', gridUpdate);
+            listenerZoom = map.addListener('zoom_changed', gridUpdate);
+        } else {
+            google.maps.event.removeListener(listenerDrag);
+            google.maps.event.removeListener(listenerZoom);
+            removeGrid(rectArr);
+            removeGrid(rectArr2);
+        }
+        gridVisable = !gridVisable;
+    });
 
-// https://developers.google.com/maps/documentation/directions/intro#traffic-model
-        // var trafficLayer = new google.maps.TrafficLayer();
-        // console.log(google.maps.TrafficLayer);
-        // console.log(new google.maps.TrafficLayer());
-        // trafficLayer.setMap(map);
-        // trafficLayer.getMap(map);
-        // console.log(trafficLayer.getMap(map));
-
-        // function updateTrafficOnMap() {
-        //     var trafficLayer = new google.maps.TrafficLayer();
-        //     trafficLayer.setMap(map);
-        //     console.log('Traffic Update!');
-        // };
-        // updateTrafficOnMap();
-        // setInterval(updateTrafficOnMap, 30000);
-        // var drawingManager = new google.maps.drawing.DrawingManager({
-        //   // drawingMode: google.maps.drawing.OverlayType.RECTANGLE,
-        //   drawingControl: true,
-        //   drawingControlOptions: {
-        //     position: google.maps.ControlPosition.TOP_CENTER,
-        //     drawingModes: [ 'rectangle']
-        //   },
-        //   rectangleOptions: {
-        //     // fillColor: '#ffff00',
-        //     // fillOpacity: 1,
-        //     // strokeWeight: 5,
-        //     clickable: true,
-        //     editable: true,
-        //     zIndex: 1
-        //   }
-        // });
-        // drawingManager.setMap(map);
-
-
-        // google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
-        //   if (event.type == 'rectangle') {
-        //     var radius = event.overlay.getRadius();
-        //   }
-        // });
-      }
-
-
-
-
-
-
-// GRID
-      var gridBtn = document.getElementById('gridBtn');
-      gridBtn.addEventListener('click', function (e) {
+    function gridUpdate() {
+        var t1 = performance.now();
+        removeGrid(rectArr);
+        removeGrid(rectArr2);
         drawRects();
-      });
+        var t2 = performance.now();
+        console.log("Green took " + (t2 - t1) + " milliseconds.");
+    }
 
-      var rectArr=[];
-      var cols=["red","blue","green","yellow","orange","gray"];
+    // var gridBtn2 = document.getElementById('gridBtn2');
+    // gridBtn2.addEventListener('click', function(e) {
+    //     removeGrid(rectArr);
+    //     removeGrid(rectArr2);
+    //     var t1 = performance.now();
+    //     drawRects2();
+    //     var t2 = performance.now();
+    //     console.log("Red took " + (t2 - t1) + " milliseconds.");
+    // });
+    //
 
-      function drawRects() {
-        var size = 1000 // 1 per km
-        // var size = 2000
+    function drawRects() {
+        var size = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
+            // var size = 2000
         var bounds = map.getBounds();
         var boundsJ = bounds.toJSON();
-        console.log(boundsJ);
+        // console.log(boundsJ);
         var NE = bounds.getNorthEast();
         var SW = bounds.getSouthWest();
         var NW = new google.maps.LatLng(NE.lat(), SW.lng());
         var SE = new google.maps.LatLng(SW.lat(), NE.lng());
 
-        console.log('NE', NE.toJSON());
-        console.log('SW', SW.toJSON());
-        console.log('NW', NW.toJSON());
-        console.log('SE', SE.toJSON());
+        // console.log('NE', NE.toJSON());
+        // console.log('SW', SW.toJSON());
+        // console.log('NW', NW.toJSON());
+        // console.log('SE', SE.toJSON());
 
-        var height = google.maps.geometry.spherical.computeDistanceBetween(NW, SW)/size;
-        var width = google.maps.geometry.spherical.computeDistanceBetween(NW, NE)/size;
-        console.log('height', height); // in km
-        console.log('width', width); // in km
+        var height = google.maps.geometry.spherical.computeDistanceBetween(NW, SW) / size;
+        var width = google.maps.geometry.spherical.computeDistanceBetween(NW, NE) / size;
+        // console.log('height', height); // in km
+        // console.log('width', width); // in km
 
         var NtoS = boundsJ.north - boundsJ.south;
         var EtoW = boundsJ.east - boundsJ.west;
-var t00 = performance.now();
+
+        // var addheight = NtoS/height; // cache value to add by
+        // var addwidth = EtoW/width; // cache value to add by
+
+        // var north, east, south, west;
+
         for (var i = 0; i < height; i++) {
             for (var j = 0; j < width; j++) {
 
-                var north = ((NtoS/height)*i);
-                var south = ((NtoS/height)*(i+1));
-                var east = ((EtoW/width)*j);
-                var west = ((EtoW/width)*(j+1));
+                var north = ((NtoS / height) * i);
+                var east = ((EtoW / width) * j);
+                var south = ((NtoS / height) * (i + 1));
+                var west = ((EtoW / width) * (j + 1));
+
 
                 if (north < 0) {
-                    north = boundsJ.north+north;
+                    north = boundsJ.north + north;
                 } else {
-                    north = boundsJ.north-north;
+                    north = boundsJ.north - north;
                 }
 
                 if (south < 0) {
-                    south = boundsJ.north+south;
+                    south = boundsJ.north + south;
                 } else {
-                    south = boundsJ.north-south;
+                    south = boundsJ.north - south;
                 }
 
                 if (east < 0) {
-                    east = boundsJ.east+east;
+                    east = boundsJ.east + east;
                 } else {
-                    east = boundsJ.east-east;
+                    east = boundsJ.east - east;
                 }
 
                 if (west < 0) {
-                    west = boundsJ.east+west;
+                    west = boundsJ.east + west;
                 } else {
-                    west = boundsJ.east-west;
+                    west = boundsJ.east - west;
                 }
 
-                var grid = new google.maps.LatLngBounds({lat: south, lng: west}, {lat: north, lng: east});
+                var grid = new google.maps.LatLngBounds({
+                    lat: south,
+                    lng: west
+                }, {
+                    lat: north,
+                    lng: east
+                });
                 // console.log(grid.toString());
 
-                var rectangle = new google.maps.Rectangle();
-                var rectOptions = {
-                      strokeColor: "#00FF00",
-                      strokeOpacity: 0.8,
-                      strokeWeight: 1,
-                      fillOpacity: 0,
-                      map: map,
-                      bounds: grid
-                };
-                rectangle.setOptions(rectOptions);
+                var rectangle = new google.maps.Rectangle({
+                    strokeColor: "#00FF00",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 1,
+                    fillOpacity: 0,
+                    map: map,
+                    bounds: grid
+                });
                 rectArr.push(rectangle);
-                bindWindow(rectangle, rectArr.length); // add event handler
-
+                getGridImage(rectangle); // add event handler
             }
         }
-var t01 = performance.now();
-console.log("Call to green took " + (t01 - t00) + " milliseconds.");
-var t0 = performance.now();
-// OLD
+    }
 
-        // var NS = google.maps.geometry.spherical.computeOffset(NW, size, 90);
-        // var SS = google.maps.geometry.spherical.computeOffset(NW, size, 180);
+    function drawRects2() {
+        var size = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
+            // var size = 2000
+        var bounds = map.getBounds();
+        var boundsJ = bounds.toJSON();
+        // console.log(boundsJ);
+        var NE = bounds.getNorthEast();
+        var SW = bounds.getSouthWest();
+        var NW = new google.maps.LatLng(NE.lat(), SW.lng());
+        var SE = new google.maps.LatLng(SW.lat(), NE.lng());
+
+        // console.log('NE', NE.toJSON());
+        // console.log('SW', SW.toJSON());
+        // console.log('NW', NW.toJSON());
+        // console.log('SE', SE.toJSON());
+
+        var height = google.maps.geometry.spherical.computeDistanceBetween(NW, SW) / size;
+        var width = google.maps.geometry.spherical.computeDistanceBetween(NW, NE) / size;
+        // console.log('height', height); // in km
+        // console.log('width', width); // in km
+
+        var NtoS = boundsJ.north - boundsJ.south;
+        var EtoW = boundsJ.east - boundsJ.west;
+
+        var NS = google.maps.geometry.spherical.computeOffset(NW, size, 90);
+        var SS = google.maps.geometry.spherical.computeOffset(NW, size, 180);
         // console.log(NS.toString(), SS.toString());
 
-        // for (var i = 0; i < height; i++) {
-        //   NE = google.maps.geometry.spherical.computeOffset(NS, i*size, 180);
-        //   SW = google.maps.geometry.spherical.computeOffset(SS, i*size, 180);
+        for (var i = 0; i < height; i++) {
+            NE = google.maps.geometry.spherical.computeOffset(NS, i * size, 180);
+            SW = google.maps.geometry.spherical.computeOffset(SS, i * size, 180);
 
-        //   console.log(NE.toString(), SW.toString());
-        //   for (var a = 0; a < width; a++) {
-        //     var rectangle = new google.maps.Rectangle();
-        //     var rectOptions = {
-        //           strokeColor: "#FF0000",
-        //           strokeOpacity: 0.8,
-        //           strokeWeight: 1,
-        //           // fillColor: cols[Math.floor(Math.random()*cols.length)],
-        //           fillOpacity: 0,
-        //           map: map,
-        //           bounds: new google.maps.LatLngBounds(SW,NE)
-        //         };
-        //         rectangle.setOptions(rectOptions);
-        //       rectArr.push(rectangle);
-        //       bindWindow(rectangle, rectArr.length) // add event handler
+            // console.log(NE.toString(), SW.toString());
+            for (var a = 0; a < width; a++) {
+                var rectangle = new google.maps.Rectangle();
+                var rectOptions = {
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 1,
+                    fillOpacity: 0,
+                    map: map,
+                    bounds: new google.maps.LatLngBounds(SW, NE)
+                };
+                rectangle.setOptions(rectOptions);
+                rectArr2.push(rectangle);
+                getGridImage(rectangle) // add event handler
 
-        //     var SW = google.maps.geometry.spherical.computeOffset(SW, size, 90)
-        //     var NE = google.maps.geometry.spherical.computeOffset(NE, size, 90)
-        //   }
-        // }
-var t1 = performance.now();
-console.log("Call to red took " + (t1 - t0) + " milliseconds.");
-//END
-      }
+                var SW = google.maps.geometry.spherical.computeOffset(SW, size, 90)
+                var NE = google.maps.geometry.spherical.computeOffset(NE, size, 90)
+            }
+        }
+    }
 
-      function bindWindow(rectangle, num) {
-        google.maps.event.addListener(rectangle, 'click', function(event) {
-          infowindow.setContent("you clicked on rectangle "+num)
-          infowindow.setPosition(event.latLng)
-          infowindow.open(map);
-          console.log(rectangle.getBounds().getCenter().toString());
-          download('https://maps.googleapis.com/maps/api/staticmap?center='+rectangle.getBounds().getCenter().toUrlValue()+'&zoom=16&format=png&maptype=satellite&size=500x500&scale=1'+'&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY')
+    function getGridImage(rectangle) {
+        var zoom = 16;
+
+        google.maps.event.addListener(rectangle, 'click', function (event) {
+            var position = rectangle.getBounds().getCenter();
+            maxZoomService.getMaxZoomAtLatLng(position, function (response) {
+                if (response.status !== 'OK') {
+                    console.warn("Error in MaxZoomService");
+                    infoWindow.setContent('Error in MaxZoomService');
+                } else {
+                    if (response.zoom < zoom) {
+                        zoom = response.zoom;
+                    }
+                }
+
+            infowindow.setContent(event.latLng.toString());
+            infowindow.setPosition(position);
+            infowindow.open(map);
+            // https://developers.google.com/maps/documentation/javascript/maxzoom
+            download('https://maps.googleapis.com/maps/api/staticmap?center=' + position.toUrlValue() +
+                '&zoom=' + zoom +
+                '&format=png&maptype=' + map.getMapTypeId() +
+                '&size=500x500&scale=1' +
+                '&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY');
+            });
         });
-      }
+    }
 
+    var removeGrid = function (rectangles) {
+        for (var i = rectangles.length - 1; i >= 0; i--) {
+            rectangles[i].setMap(null);
+        }
+    }
 
-
-
-
-
-// EXPORT
-
-      var exportBtn = document.getElementById('exportBtn');
-      exportBtn.addEventListener('click', function (e) {
+    // EXPORT
+    var exportBtn = document.getElementById('exportBtn');
+    exportBtn.addEventListener('click', function(e) {
         var bounds = map.getBounds();
         var center = map.getCenter();
         var zoom = map.getZoom();
@@ -294,34 +310,37 @@ console.log("Call to red took " + (t1 - t0) + " milliseconds.");
         console.log(center.lat());
         console.log(center.lng());
         var staticmapURL = 'https://maps.googleapis.com/maps/api/staticmap';
-        var parametersURL = '?center='+center.toUrlValue()+'&zoom='+zoom+'&format=png&maptype=satellite&size=800x800&scale=1'+'&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY'; // timestamp
+        var parametersURL = '?center=' + center.toUrlValue() +
+            '&zoom=' + zoom +
+            '&format=png&maptype=' + map.getMapTypeId() + '&size=800x800&scale=1' +
+            '&key=' + APIKEY; // timestamp
 
         // download(staticmapURL+parametersURL);
         var request = new XMLHttpRequest(); // http://youmightnotneedjquery.com/ // IE9+
-        request.open('GET', staticmapURL+parametersURL, true);
+        request.open('GET', staticmapURL + parametersURL, true);
         request.responseType = 'blob';
         request.onload = function(e) {
-          if (request.status >= 200 && request.status < 400) {
-            // Success!
-            // download(e.target.response, "staticmap.png", "image/png")
-            download(e.target.response, "staticmap.png") // https://github.com/rndme/download
-          } else {
-            // We reached our target server, but it returned an error
-            console.error("ajax: server errored");
-          }
+            if (request.status >= 200 && request.status < 400) {
+                // Success!
+                // download(e.target.response, "staticmap.png", "image/png")
+                download(e.target.response, "staticmap.png") // https://github.com/rndme/download
+            } else {
+                // We reached our target server, but it returned an error
+                console.error("ajax: server errored");
+            }
         };
 
         request.onerror = function() {
-          // There was a connection error of some sort
-          console.error("ajax: can't connect to server!");
+            // There was a connection error of some sort
+            console.error("ajax: can't connect to server!");
         };
 
         request.send();
-      });
-
+    });
     </script>
     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
     <script async defer src="download.js"></script>
-  </body>
+</body>
+
 </html>
