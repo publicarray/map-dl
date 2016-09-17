@@ -25,6 +25,10 @@
         left: 120px;
         z-index: 9;
     }
+    #UI span {
+        color: #fff;
+        text-shadow: 0 0 2px black;
+    }
 
     #coords {
         background-color: black;
@@ -46,6 +50,11 @@
     .btn: hover {
         background: #eee;
     }
+    input.btn {
+        border: 1px solid #bfbfbf;
+        font-size: 14px;
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px, inset 0 0 3px -1px rgba(0, 0, 0, 0.5)
+    }
     </style>
 </head>
 
@@ -53,7 +62,7 @@
     <div id="UI">
         <div class="btn" id="exportBtn">Export</div>
         <div class="btn" id="gridBtn">Grid</div>
-        <span><input type="number" class="" id="scaleInput" min="1" max="100" step="1" value="1"></input> Km</span>
+        <span><input type="number" class="btn" id="scaleInput" min="1" max="100" step="1" value="1"></input> Km</span>
         <!-- <div class="btn" id="gridBtn2">Grid2</div> -->
     </div>
     <div id="map"></div>
@@ -90,16 +99,18 @@
 
     // GRID Buttons
     var gridVisable = false;
-    var listenerDrag, listenerZoom;
+    var listenerDrag, listenerZoom, listenerTextInput;
     var gridBtn = document.getElementById('gridBtn');
     gridBtn.addEventListener('click', function(e) {
         gridUpdate();
         if (gridVisable == false) {
             listenerDrag = map.addListener('dragend', gridUpdate);
             listenerZoom = map.addListener('zoom_changed', gridUpdate);
+            listenerTextInput = scaleInput.addEventListener('change', gridUpdate);
         } else {
             google.maps.event.removeListener(listenerDrag);
             google.maps.event.removeListener(listenerZoom);
+            scaleInput.removeEventListener('change', gridUpdate);
             removeGrid(rectArr);
             removeGrid(rectArr2);
         }
