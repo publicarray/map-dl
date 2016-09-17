@@ -76,16 +76,9 @@
             useCORS: true,
             background: undefined, // transparent
             onrendered: function(canvas) {
-                var img = canvas.toDataURL('image/png');
-                var dlimg = img.replace(/^data:image\/[^;]/, 'data:image/octet-stream');
-
-                // hacky way to specify a file name
-                var link = document.createElement('a');
-                link.download = 'traffic-layer.png';
-                link.href = dlimg;
-                link.draggable = true;
-                link.click();
                 toggleUI();
+                var img = canvas.toDataURL('image/png');
+                download(img, 'file.png', 'image/png');
             }
         });
     };
@@ -114,6 +107,7 @@
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
     <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script async defer src="download.js"></script>
 </body>
 
 </html>
