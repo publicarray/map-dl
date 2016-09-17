@@ -45,7 +45,7 @@
 
 <body>
     <div id="UI">
-        <div class="btn" id="exportBtn">Screen Shot</div>
+        <div class="btn" id="exportBtn">Export</div>
         <div class="btn" id="toggleUIBtn">Toggle UI</div>
     </div>
     <div id="map"></div>
@@ -55,6 +55,7 @@
     function initMap() {
         var gMapOptions = {
             zoom: 12,
+            backgroundColor: 'transparent',
             center: {lat: -27.938433, lng: 153.407170}, // Gold Coast
             mapTypeId: google.maps.MapTypeId.ROADMAP,
         }
@@ -73,6 +74,7 @@
         toggleUI();
         html2canvas(document.body, {
             useCORS: true,
+            background: undefined, // transparent
             onrendered: function(canvas) {
                 var img = canvas.toDataURL('image/png');
                 var dlimg = img.replace(/^data:image\/[^;]/, 'data:image/octet-stream');
@@ -95,7 +97,6 @@
 
     function toogleMapUI() {
         isVisable = !isVisable;
-        console.log(isVisable);
         var visability = isVisable ? "on" : "off";
         map.setOptions({
             // disableDoubleClickZoom: true,
