@@ -24,20 +24,38 @@
         top: 10px;
         left: 120px;
         z-index: 9;
+        font-size: 11px;
+        /* line-height: 1.2; */
     }
-    #UI span {
-        color: #fff;
-        text-shadow: 0 0 2px black;
+
+    #scaleInput {
+        padding: 8px 2px;
+        border: none;
+        height: 10pt;
+        margin: 0px;
+        width: 50px;
     }
 
     #coords {
-        background-color: black;
+        background-color: black; /* fall-back */
+        background-color: rgba(0, 0, 0, 0.5);
         color: white;
         padding: 5px;
       }
 
+    .btn.on, .btn:active {
+        font-weight: 500;
+        background: #2196f3;
+        color: #fff;
+    }
+
+    .btn.on:hover {
+        background: #1976d2;
+        color: #fff;
+    }
+
     .btn {
-        padding: 5px;
+        padding: 8px;
         background: #fff;
         border-radius: 2px;
         display: inline-block;
@@ -47,14 +65,16 @@
         cursor: pointer;
     }
 
-    .btn: hover {
+    .btn:hover {
         background: #eee;
+        color: #000;
     }
-    input.btn {
-        border: 1px solid #bfbfbf;
-        font-size: 14px;
-        box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px, inset 0 0 3px -1px rgba(0, 0, 0, 0.5)
+
+    span.btn {
+        padding: 0px 8px;
+        cursor: auto;
     }
+
     </style>
 </head>
 
@@ -62,7 +82,7 @@
     <div id="UI">
         <div class="btn" id="exportBtn">Export</div>
         <div class="btn" id="gridBtn">Grid</div>
-        <span><input type="number" class="btn" id="scaleInput" min="1" max="100" step="1" value="1"> Km</span>
+        <span class="btn"><input type="number" id="scaleInput" min="1" max="1000" step="1" value="1">Km</span>
         <!-- <div class="btn" id="gridBtn2">Grid2</div> -->
     </div>
     <div id="map"></div>
@@ -102,6 +122,7 @@
     var listenerDrag, listenerZoom, listenerTextInput;
     var gridBtn = document.getElementById('gridBtn');
     gridBtn.addEventListener('click', function(e) {
+        e.target.classList.toggle("on");
         gridUpdate();
         if (gridVisable == false) {
             listenerDrag = map.addListener('dragend', gridUpdate);
@@ -138,8 +159,13 @@
     //
 
     function drawRects() {
+        // var size = 2000
         var size = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
-            // var size = 2000
+            console.info("size", size);
+        if (size == NaN || size == Infinity || size <= 0) { // some browsers don't sanitize user input
+            console.error("Error: size is not a valid number!", size);
+            return;
+        }
         var bounds = map.getBounds();
         var boundsJ = bounds.toJSON();
         // console.log(boundsJ);
