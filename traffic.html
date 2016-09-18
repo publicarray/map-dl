@@ -45,13 +45,14 @@
 
 <body>
     <div id="UI">
+        <div class="btn" id="toggleTrafficBtn">Traffic</div>
+        <div class="btn" id="toggleUIBtn">Toggle Map</div>
         <div class="btn" id="exportBtn">Export</div>
-        <div class="btn" id="toggleUIBtn">Toggle UI</div>
     </div>
     <div id="map"></div>
     <script>
-    var isVisable = true;
-    var map;
+    var ui = new UI();
+    var map, trafficLayer;
 
     function initMap() {
         var gMapOptions = {
@@ -65,22 +66,26 @@
         }
 
         map = new google.maps.Map(document.getElementById("map"), gMapOptions);
-        var trafficLayer = new google.maps.TrafficLayer();
-        trafficLayer.setMap(map);
+        trafficLayer = new google.maps.TrafficLayer({
+            map: map
+        });
+        // trafficLayer.setMap(map);
     };
 
-    var exportBtn = document.getElementById('exportBtn');
+    var toggleTrafficBtn = document.getElementById('toggleTrafficBtn');
     var toggleUIBtn = document.getElementById('toggleUIBtn');
+    var exportBtn = document.getElementById('exportBtn');
+    toggleTrafficBtn.addEventListener('click', ui.toggleTraffic);
+    toggleUIBtn.addEventListener('click', ui.toggleMap);
     exportBtn.addEventListener('click', screenshot);
-    toggleUIBtn.addEventListener('click', toogleMapUI);
 
     function screenshot() {
-        toggleUI();
+        ui.toggleUI();
         html2canvas(document.body, {
             useCORS: true,
             background: undefined, // transparent
             onrendered: function (canvas) {
-                toggleUI();
+                ui.toggleUI();
                 // var img = canvas.toDataURL('image/png');
                 // download(img, 'file.png', 'image/png');
                 canvas.toBlob(function (blob) {
@@ -90,26 +95,41 @@
         });
     };
 
-    function toggleUI() {
-        var UI = document.getElementById('UI');
-        UI.style.visibility = UI.style.visibility == "hidden" ? "visible" : "hidden";
-    }
+    function UI() {
+        var isUIVisible = true;
+        var isMapVisible = true;
+        var isTrafficVisible = true;
+        var UIelement = document.getElementById('UI');
 
-    function toogleMapUI() {
-        isVisable = !isVisable;
-        var visability = isVisable ? "on" : "off";
-        map.setOptions({
-            // disableDoubleClickZoom: true,
-            // draggable: false,
-            // scrollwheel: false,
-            // panControl: false,
-            disableDefaultUI: !isVisable,
-            styles: [{
-                "stylers": [{
-                    "visibility": visability,
+        this.toggleUI = function () {
+            isUIVisible = !isUIVisible;
+            UIelement.style.visibility = isUIVisible ? "visible " : "hidden";
+            map.setOptions({
+                disableDefaultUI: !isUIVisible,
+            });
+        }
+
+        this.toggleMap = function () {
+            isMapVisible = !isMapVisible;
+            map.setOptions({
+                // disableDoubleClickZoom: true,
+                // draggable: false,
+                // scrollwheel: false,
+                // panControl: false,
+                // disableDefaultUI: !isMapVisable,
+                styles: [{
+                    "stylers": [{
+                        "visibility": (isMapVisible ? "on" : "off"),
+                    }]
                 }]
-            }]
-        });
+            });
+        }
+
+        this.toggleTraffic = function () {
+            isTrafficVisible = !isTrafficVisible;
+            var temp = isTrafficVisible ? map : null;
+            trafficLayer.setMap(temp);
+        }
     }
 
     // FireFox
