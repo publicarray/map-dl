@@ -24,10 +24,22 @@
         top: 10px;
         left: 120px;
         z-index: 9;
+        font-size: 11px;
+    }
+
+    .btn.on, .btn:active {
+        font-weight: 500;
+        background: #2196f3;
+        color: #fff;
+    }
+
+    .btn.on:hover {
+        background: #1976d2;
+        color: #fff;
     }
 
     .btn {
-        padding: 5px;
+        padding: 8px;
         background: #fff;
         border-radius: 2px;
         display: inline-block;
@@ -37,16 +49,17 @@
         cursor: pointer;
     }
 
-    .btn: hover {
+    .btn:hover {
         background: #eee;
+        color: #000;
     }
     </style>
 </head>
 
 <body>
     <div id="UI">
-        <div class="btn" id="toggleTrafficBtn">Traffic</div>
-        <div class="btn" id="toggleUIBtn">Toggle Map</div>
+        <div class="btn on" id="toggleTrafficBtn">Traffic</div>
+        <div class="btn" id="toggleUIBtn">Hide Map</div>
         <div class="btn" id="exportBtn">Export</div>
     </div>
     <div id="map"></div>
@@ -69,7 +82,6 @@
         trafficLayer = new google.maps.TrafficLayer({
             map: map
         });
-        // trafficLayer.setMap(map);
     };
 
     var toggleTrafficBtn = document.getElementById('toggleTrafficBtn');
@@ -101,7 +113,7 @@
         var isTrafficVisible = true;
         var UIelement = document.getElementById('UI');
 
-        this.toggleUI = function () {
+        this.toggleUI = function (e) {
             isUIVisible = !isUIVisible;
             UIelement.style.visibility = isUIVisible ? "visible " : "hidden";
             map.setOptions({
@@ -109,7 +121,8 @@
             });
         }
 
-        this.toggleMap = function () {
+        this.toggleMap = function (e) {
+            e.target.classList.toggle("on");
             isMapVisible = !isMapVisible;
             map.setOptions({
                 // disableDoubleClickZoom: true,
@@ -125,7 +138,8 @@
             });
         }
 
-        this.toggleTraffic = function () {
+        this.toggleTraffic = function (e) {
+            e.target.classList.toggle("on");
             isTrafficVisible = !isTrafficVisible;
             var temp = isTrafficVisible ? map : null;
             trafficLayer.setMap(temp);
