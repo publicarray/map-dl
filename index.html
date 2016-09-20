@@ -242,7 +242,7 @@
                     bounds: grid
                 });
                 rectArr.push(rectangle);
-                getGridImage(rectangle); // add event handler
+                getGridImage(rectangle, size); // add event handler
             }
         }
     }
@@ -300,8 +300,46 @@
         }
     }
 
-    function getGridImage(rectangle) {
-        var zoom = 16;
+    // https://stackoverflow.com/questions/6048975/google-maps-v3-how-to-calculate-the-zoom-level-for-a-given-bounds#13274361
+    function getBoundsZoomLevel(bounds, mapDim) {
+        var WORLD_DIM = { height: 256, width: 256 };
+        var ZOOM_MAX = 21;
+
+        function latRad(lat) {
+            var sin = Math.sin(lat * Math.PI / 180);
+            var radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
+            return Math.max(Math.min(radX2, Math.PI), -Math.PI) / 2;
+        }
+
+        function zoom(mapPx, worldPx, fraction) {
+            return Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);
+        }
+
+        var ne = bounds.getNorthEast();
+        var sw = bounds.getSouthWest();
+
+        var latFraction = (latRad(ne.lat()) - latRad(sw.lat())) / Math.PI;
+
+        var lngDiff = ne.lng() - sw.lng();
+        var lngFraction = ((lngDiff < 0) ? (lngDiff + 360) : lngDiff) / 360;
+
+        var latZoom = zoom(mapDim.height, WORLD_DIM.height, latFraction);
+        var lngZoom = zoom(mapDim.width, WORLD_DIM.width, lngFraction);
+
+        return Math.min(latZoom, lngZoom, ZOOM_MAX);
+    }
+
+
+    function getGridImage(rectangle, gridSizeInKm) {
+        // var zoom = 16;
+        var size = 640; // max = 640, 500
+        // gridSizeInKm == 1 -> size=500x500 at zoom 16
+        // var size = 500 * gridSizeInKm;
+        // while (size > 640)
+        //     zoom--;
+        //     size / magicnumber;
+        // }
+        var zoom = getBoundsZoomLevel(rectangle.getBounds(), {height: size, width: size})
 
         google.maps.event.addListener(rectangle, 'click', function (event) {
             var position = rectangle.getBounds().getCenter();
@@ -311,6 +349,7 @@
                     infoWindow.setContent('Error in MaxZoomService');
                 } else {
                     if (response.zoom < zoom) {
+                        console.warn("Sorry, but the max zoom for this region is: " + response.zoom + ". changed from: ", zoom);
                         zoom = response.zoom;
                     }
                 }
@@ -322,7 +361,7 @@
             download('https://maps.googleapis.com/maps/api/staticmap?center=' + position.toUrlValue() +
                 '&zoom=' + zoom +
                 '&format=png&maptype=' + map.getMapTypeId() +
-                '&size=500x500&scale=1' +
+                '&size='+size+'x'+size+'&scale=2' +
                 '&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY');
             });
         });
