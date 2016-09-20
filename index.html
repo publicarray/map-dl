@@ -161,7 +161,6 @@
     function drawRects() {
         // var size = 2000
         var size = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
-            console.info("size", size);
         if (size == NaN || size == Infinity || size <= 0) { // some browsers don't sanitize user input
             console.error("Error: size is not a valid number!", size);
             return;
