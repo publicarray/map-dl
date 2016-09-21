@@ -422,7 +422,7 @@
     exportBtn.addEventListener('click', function (e) {
         if (rectArr.length > 10) {
             var result;
-            while ((result = prompt("You have reached the Maximum parallel download limit!\n Please input your own API key.")) == '') {
+            while ((result = prompt("You have reached the Maximum parallel download limit!\nPlease input your own API key.\nYou can get your API key here: https://developers.google.com/maps/documentation/static-maps/get-api-key")) == '') {
             }
             console.log('Using API KEY:', result);
             APIKEY = result;
