@@ -419,6 +419,7 @@
     // EXPORT ALL
     var exportBtn = document.getElementById('exportBtn');
     exportBtn.addEventListener('click', function (e) {
+        var limit = 25;
         // if (rectArr.length > 15) {
         //     var result = prompt("Please input your own API key or none at all.\nYou can get your API key here: https://developers.google.com/maps/documentation/static-maps/get-api-key");
         //     if (result !== null) {
@@ -426,8 +427,8 @@
         //         APIKEY = result;
         //         zipMe();
         //     }
-        if (rectArr.length > 25) {
-            alert('Mass downloading is prohibited see Google Maps T&C Section 10.5e:\nhttps://developers.google.com/maps/terms#section_10');
+        if (rectArr.length > limit) {
+            alert("Mass downloading is prohibited see Google Maps T&C Section 10.5e:\nhttps://developers.google.com/maps/terms#section_10\nI've set the max number of requests to "+limit+" requests for now.");
         } else {
             zipMe();
         }
