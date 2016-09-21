@@ -376,17 +376,12 @@
     function ajax (url, responseType, callback) {
         var request = new XMLHttpRequest(); // http://youmightnotneedjquery.com/ // IE9+
         request.open('GET', url, true);
-        console.log(url);
         request.responseType = 'blob';
+        console.log('Requesting:', url);
         request.onload = function(e) {
-            console.log("running ajax");
-
             if (request.status >= 200 && request.status < 400) {
                 // Success!
-                console.log("running cllback");
                 callback(e.target.response);
-                // download(e.target.response, "staticmap.png", "image/png")
-                // download(e.target.response, "staticmap.png") // https://github.com/rndme/download
             } else {
                 // We reached our target server, but it returned an error
                 console.error("Google Maps API send an Error!");
@@ -407,9 +402,8 @@
         for (var i = 0; i < rectArr.length; i++) {
             !function outer(i){ // http://tobyho.com/2011/11/02/callbacks-in-loops/
                 __getGridURL(rectArr[i], sizeValue, function (url) {
-                    console.log("i:", i);
                     ajax(url, 'blob', function (response) {
-                        console.log(response);
+                        console.log('Received:', response);
                         zip.file("map("+i+").png", response);
 
                         if (i == rectArr.length -1) { // if the last image is added than download the zip.
@@ -423,10 +417,9 @@
         }
     }
 
-    // EXPORT
+    // EXPORT ALL
     var exportBtn = document.getElementById('exportBtn');
-    exportBtn.addEventListener('click', function(e) {
-        console.log('rectArr.length', rectArr.length);
+    exportBtn.addEventListener('click', function (e) {
         if (rectArr.length > 10) {
             var result;
             while ((result = prompt("You have reached the Maximum parallel download limit!\n Please input your own API key.")) == '') {
@@ -438,55 +431,13 @@
             zipMe();
         }
 
-
-
-
-
-        // var bounds = map.getBounds();
-        // var center = map.getCenter();
-        // var size = {height: 800, width: 800};
-        // var zoom = getBoundsZoomLevel(bounds, size);
-
-        // // var zoom = map.getZoom();
-        // console.log(bounds.toJSON());
-        // console.log(center.toJSON());
-        // console.log(zoom);
-        // console.log(center.lat());
-        // console.log(center.lng());
-        // var staticmapURL = 'https://maps.googleapis.com/maps/api/staticmap';
-        // var parametersURL = '?center=' + center.toUrlValue() +
-        //     '&zoom=' + zoom +
-        //     '&format=png&maptype=' + map.getMapTypeId() + '&size='+size.height+'x'+size.width+'&scale=1' +
-        //     '&key=' + APIKEY; // timestamp
-        // console.log(parametersURL);
-        // // download(staticmapURL+parametersURL);
-        // var request = new XMLHttpRequest(); // http://youmightnotneedjquery.com/ // IE9+
-        // request.open('GET', staticmapURL + parametersURL, true);
-        // request.responseType = 'blob';
-        // request.onload = function(e) {
-        //     if (request.status >= 200 && request.status < 400) {
-        //         // Success!
-        //         // download(e.target.response, "staticmap.png", "image/png")
-        //         download(e.target.response, "staticmap.png") // https://github.com/rndme/download
-        //     } else {
-        //         // We reached our target server, but it returned an error
-        //         console.error("Google Maps API send an Error!");
-        //     }
-        // };
-
-        // request.onerror = function() {
-        //     // There was a connection error of some sort
-        //     console.error("Unable to contact Google Maps API!");
-        // };
-
-        // request.send();
     });
     </script>
     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
     <script async defer src="jszip/jszip.min.js"></script>
     <script async defer src="download.js"></script>
-    <!-- <script async defer src="filesaver/FileSaver.min.js"></script> -->
+
     <!--
     Download Libs:
     https://github.com/rndme/download
