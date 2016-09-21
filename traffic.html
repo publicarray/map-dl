@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Google Maps Traffic</title>
+    <style>
+    html,
+    body {
+        font-family: Roboto, Arial, sans-serif;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    #map {
+        height: 100%;
+    }
+
+    #UI {
+        position: absolute;
+        user-select: none;
+        top: 10px;
+        left: 120px;
+        z-index: 9;
+        font-size: 11px;
+    }
+
+    .btn.on, .btn:active {
+        font-weight: 500;
+        background: #2196f3;
+        color: #fff;
+    }
+
+    .btn.on:hover {
+        background: #1976d2;
+        color: #fff;
+    }
+
+    .btn {
+        padding: 8px;
+        background: #fff;
+        border-radius: 2px;
+        display: inline-block;
+        text-align: center;
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px;
+        min-width: 39px;
+        cursor: pointer;
+    }
+
+    .btn:hover {
+        background: #eee;
+        color: #000;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="UI">
+        <div class="btn on" id="toggleTrafficBtn">Traffic</div>
+        <div class="btn" id="toggleUIBtn">Hide Map</div>
+        <div class="btn" id="exportBtn">Export</div>
+    </div>
+    <div id="map"></div>
+    <script>
+    var ui = new UI();
+    var map, trafficLayer;
+
+    function initMap() {
+        var gMapOptions = {
+            zoom: 12,
+            backgroundColor: 'transparent',
+            center: { // Gold Coast
+                lat: -27.938433,
+                lng: 153.407170
+            },
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+        }
+
+        map = new google.maps.Map(document.getElementById("map"), gMapOptions);
+        trafficLayer = new google.maps.TrafficLayer({
+            map: map
+        });
+    };
+
+    var toggleTrafficBtn = document.getElementById('toggleTrafficBtn');
+    var toggleUIBtn = document.getElementById('toggleUIBtn');
+    var exportBtn = document.getElementById('exportBtn');
+    toggleTrafficBtn.addEventListener('click', ui.toggleTraffic);
+    toggleUIBtn.addEventListener('click', ui.toggleMap);
+    exportBtn.addEventListener('click', screenshot);
+
+    function screenshot() {
+        ui.toggleUI();
+        html2canvas(document.body, {
+            useCORS: true,
+            background: undefined, // transparent
+            onrendered: function (canvas) {
+                ui.toggleUI();
+                // var img = canvas.toDataURL('image/png');
+                // download(img, 'file.png', 'image/png');
+                canvas.toBlob(function (blob) {
+                    download(blob, 'file.png', 'image/png');
+                }, 'image/png');
+            }
+        });
+    };
+
+    function UI() {
+        var isUIVisible = true;
+        var isMapVisible = true;
+        var isTrafficVisible = true;
+        var UIelement = document.getElementById('UI');
+
+        this.toggleUI = function (e) {
+            isUIVisible = !isUIVisible;
+            UIelement.style.visibility = isUIVisible ? "visible " : "hidden";
+            map.setOptions({
+                disableDefaultUI: !isUIVisible,
+            });
+        }
+
+        this.toggleMap = function (e) {
+            e.target.classList.toggle("on");
+            isMapVisible = !isMapVisible;
+            map.setOptions({
+                // disableDoubleClickZoom: true,
+                // draggable: false,
+                // scrollwheel: false,
+                // panControl: false,
+                // disableDefaultUI: !isMapVisable,
+                styles: [{
+                    "stylers": [{
+                        "visibility": (isMapVisible ? "on" : "off"),
+                    }]
+                }]
+            });
+        }
+
+        this.toggleTraffic = function (e) {
+            e.target.classList.toggle("on");
+            isTrafficVisible = !isTrafficVisible;
+            var temp = isTrafficVisible ? map : null;
+            trafficLayer.setMap(temp);
+        }
+    }
+
+    // FireFox
+    if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+        console.warn("FireFox makes grainy images. We recommend a different browser.");
+    }
+
+    // canvasToBlobPollyfill
+    if (!HTMLCanvasElement.prototype.toBlob) {
+        console.warn("Using Canvas.ToBlob() Pollyfill");
+        Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+            value: function(callback, type, quality) {
+
+                var binStr = atob(this.toDataURL(type, quality).split(',')[1]),
+                    len = binStr.length,
+                    arr = new Uint8Array(len);
+
+                for (var i = 0; i < len; i++) {
+                    arr[i] = binStr.charCodeAt(i);
+                }
+
+                callback(new Blob([arr], {
+                    type: type || 'image/png'
+                }));
+            }
+        });
+    }
+
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
+    <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script async defer src="download/download.js"></script>
+</body>
+
+</html>
