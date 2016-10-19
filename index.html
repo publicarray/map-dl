@@ -25,7 +25,6 @@
         left: 120px;
         z-index: 9;
         font-size: 11px;
-        /* line-height: 1.2; */
     }
 
     #scaleInput {
@@ -153,7 +152,6 @@
 
     var sizeValue;
     var rectArr = [];
-    var rectArr2 = [];
 
     // GRID Buttons
     var gridVisable = false;
@@ -180,23 +178,10 @@
         var t1 = performance.now();
         removeGrid(rectArr);
         rectArr = []; // reset array
-        removeGrid(rectArr2);
-        rectArr2 = []; // reset array
         drawRects();
         var t2 = performance.now();
         console.log("Green took " + (t2 - t1) + " milliseconds.");
     }
-
-    // var gridBtn2 = document.getElementById('gridBtn2');
-    // gridBtn2.addEventListener('click', function(e) {
-    //     removeGrid(rectArr);
-    //     removeGrid(rectArr2);
-    //     var t1 = performance.now();
-    //     drawRects2();
-    //     var t2 = performance.now();
-    //     console.log("Red took " + (t2 - t1) + " milliseconds.");
-    // });
-    //
 
     function drawRects() {
         sizeValue = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
@@ -288,7 +273,6 @@
 
     function drawRects2() {
         sizeValue = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
-            // var size = 2000
         var bounds = map.getBounds();
         var boundsJ = bounds.toJSON();
         // console.log(boundsJ);
@@ -372,10 +356,6 @@
     function getGridImage(rectangle, gridSizeInKm) {
         google.maps.event.addListener(rectangle, 'click', function (event) {
             __getGridURL(rectangle, gridSizeInKm, download);
-            // infowindow.setContent(event.latLng.toString());
-            // infowindow.setPosition(event.latLng.toString());
-            // infowindow.open(map);
-
         });
     }
 
@@ -410,7 +390,7 @@
     }
 
     function ajax (url, responseType, callback) {
-        var request = new XMLHttpRequest(); // http://youmightnotneedjquery.com/ // IE9+
+        var request = new XMLHttpRequest(); // http://youmightnotneedjquery.com/#request // IE9+
         request.open('GET', url, true);
         request.responseType = 'blob';
         console.log('Requesting:', url);
@@ -481,17 +461,9 @@
         }
     });
     </script>
-    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
     <script async defer src="jszip/jszip.min.js"></script>
     <script async defer src="download/download.js"></script>
-
-    <!--
-    Download Libs:
-    https://github.com/rndme/download
-    https://github.com/eligrey/FileSaver.js
-    https://github.com/jimmywarting/StreamSaver.js
-    -->
 </body>
 
 </html>
