@@ -206,8 +206,8 @@
         // console.log('height', height); // in km
         // console.log('width', width); // in km
 
-        var NtoS = boundsJ.north - boundsJ.south;
-        var EtoW = boundsJ.east - boundsJ.west;
+        var totalHeight = boundsJ.north - boundsJ.south;
+        var totalWidth = boundsJ.east - boundsJ.west;
 
         // var addheight = NtoS/height; // cache value to add by
         // var addwidth = EtoW/width; // cache value to add by
@@ -217,10 +217,10 @@
         for (var i = 0; i < height; i++) {
             for (var j = 0; j < width; j++) {
 
-                var north = ((NtoS / height) * i);
-                var east = ((EtoW / width) * j);
-                var south = ((NtoS / height) * (i + 1));
-                var west = ((EtoW / width) * (j + 1));
+                var north = ((totalHeight / height) * i);
+                var east = ((totalWidth / width) * j);
+                var south = ((totalHeight / height) * (i + 1));
+                var west = ((totalWidth / width) * (j + 1));
 
 
                 if (north < 0) {
@@ -247,7 +247,7 @@
                     west = boundsJ.east - west;
                 }
 
-                var grid = new google.maps.LatLngBounds({
+                var rectangleBounds = new google.maps.LatLngBounds({
                     lat: south,
                     lng: west
                 }, {
@@ -262,7 +262,7 @@
                     strokeWeight: 1,
                     fillOpacity: 0,
                     map: map,
-                    bounds: grid
+                    bounds: rectangleBounds
                 });
                 rectArr.push(rectangle);
                 getGridImage(rectangle, sizeValue); // add event handler
