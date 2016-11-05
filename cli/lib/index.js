@@ -1,10 +1,7 @@
 'use strict';
 
-var fs = require('fs');
-// var url = require('url');
-// var http = require('http');
-var https = require('https');
-var exec = require('child_process').exec;
+const fs = require('fs');
+const https = require('https');
 // var spawn = require('child_process').spawn;
 
 function toRadians(num) {
@@ -206,7 +203,7 @@ function init(boundaries, flags) {
         west: boundariesArr[3],
     }
 
-    const scale = flags.scale * 1000 || 10 * 1000;
+    const scale = flags.scale * 1000 || 5 * 1000;
     const maptype = flags.maptype || 'hybrid';
     const apikey = flags.apikey || 'AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY';
     console.log(scale);
@@ -228,15 +225,15 @@ function init(boundaries, flags) {
     //     return;
     // }
 
-    var output = flags.output || '.';
+    var output = flags.output.toString() || '.';
 
-    var mkdir = 'mkdir -p ' + output;
-    var child = exec(mkdir, function(err, stdout, stderr) {
-        if (err) {
-            // throw err;
-            return;
+    try {
+        fs.mkdirSync(output);
+    } catch (err) {
+        if (err.code != 'EEXIST') {
+            throw err;
         }
-    });
+    }
 
     for (var i = rectangles.length - 1; i >= 0; i--) {
         downloadFile(rectangles[i].url, output, 'staticmap ('+i+').png');

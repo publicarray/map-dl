@@ -1,7 +1,7 @@
 {
   "name": "map-dl",
   "version": "1.0.0",
-  "description": "Download Google map images",
+  "description": "CLI to Download Google map images",
   "main": "lib",
   "engines": {
     "node": ">=0.11.0"
@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "map-dl": "bin/cli.js"
+    "map-dl": "cli/bin/cli.js"
   },
   "repository": {
     "type": "git",
@@ -23,8 +23,7 @@
   },
   "homepage": "https://github.com/publicarray/map-dl#readme",
   "files": [
-    "bin",
-    "lib"
+    "cli"
   ],
   "dependencies": {
     "meow": "^3.7.0"
