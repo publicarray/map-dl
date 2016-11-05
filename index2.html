@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Map-dl</title>
+    <style>
+    html,
+    body {
+        font-family: Roboto, Arial, sans-serif;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    #map {
+        height: 100%;
+    }
+
+    #UI {
+        position: absolute;
+        user-select: none;
+        top: 10px;
+        left: 120px;
+        z-index: 9;
+        font-size: 11px;
+    }
+
+    #scaleInput {
+        padding: 8px 2px;
+        border: none;
+        height: 10pt;
+        margin: 0px;
+        width: 50px;
+    }
+
+    #coords {
+        background-color: black; /* fall-back */
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 5px;
+      }
+
+    .btn.on, .btn:active {
+        font-weight: 500;
+        background: #2196f3;
+        color: #fff;
+    }
+
+    .btn.on:hover {
+        background: #1976d2;
+        color: #fff;
+    }
+
+    .btn {
+        padding: 8px;
+        background: #fff;
+        border-radius: 2px;
+        display: inline-block;
+        text-align: center;
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px;
+        min-width: 39px;
+        cursor: pointer;
+    }
+
+    .btn:hover {
+        background: #eee;
+        color: #000;
+    }
+
+    span.btn {
+        padding: 0px 8px;
+        cursor: auto;
+    }
+
+    .hidden {
+        display: none;
+        visibility: hidden;
+    }
+
+    progress {
+        /* reset browser defaults */
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        border: none;
+
+        width: 80%;
+        border: none;
+        padding: 0;
+
+        height: 20px;
+        top: 26%;
+        left: 10%;
+        position: absolute;
+
+        /* IE10 */
+        color: #3572E3;
+        background-color: #eee;
+    }
+
+    progress::-webkit-progress-bar {
+        background-color: #eee;
+    }
+    progress::-webkit-progress-value {
+        background-color: #3572E3;
+
+    }
+    progress::-moz-progress-bar {
+        background-color: #3572E3;
+    }
+
+    </style>
+    <script src="lib/bundle.js"></script>
+</head>
+
+<body>
+    <div id="UI">
+        <div class="btn" id="exportBtn">Export All</div>
+        <div class="btn" id="gridBtn">Grid</div>
+        <span class="btn"><input type="number" id="scaleInput" min="1" max="1000" step="1" value="5">Km</span>
+    </div>
+    <div id="map"></div>
+    <div id="coords"></div>
+    <progress id="progress" class="hidden" min="0" value="0"></progress>
+    <script>
+
+    // init('[-27.883,153.531,-27.994,153.284]', {scale:5});
+    var APIKEY = 'AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY';
+    var map;
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 13,
+            center: {
+                lat: -27.938433,
+                lng: 153.407170
+            },
+            mapTypeId: 'satellite'
+        });
+
+        maxZoomService = new google.maps.MaxZoomService();
+
+         // Show the lat and lng under the mouse cursor.
+        var coordsDiv = document.getElementById('coords');
+        map.controls[google.maps.ControlPosition.TOP_CENTER].push(coordsDiv);
+        map.addListener('mousemove', function(event) {
+          coordsDiv.textContent =
+              'lat: ' + Math.round(event.latLng.lat() * 1000) / 1000 + ', ' +
+              'lng: ' + Math.round(event.latLng.lng() * 1000) / 1000;
+        });
+    }
+
+    var sizeValue;
+    var rectArr = [];
+
+    // GRID Buttons
+    var gridVisable = false;
+    var listenerDrag, listenerZoom, listenerTextInput;
+    var gridBtn = document.getElementById('gridBtn');
+    gridBtn.addEventListener('click', function(e) {
+        e.target.classList.toggle("on");
+        gridUpdate();
+        if (gridVisable == false) {
+            listenerDrag = map.addListener('dragend', gridUpdate);
+            listenerZoom = map.addListener('zoom_changed', gridUpdate);
+            listenerTextInput = scaleInput.addEventListener('change', gridUpdate);
+        } else {
+            google.maps.event.removeListener(listenerDrag);
+            google.maps.event.removeListener(listenerZoom);
+            scaleInput.removeEventListener('change', gridUpdate);
+            removeGrid(rectArr);
+            removeGrid(rectArr2);
+        }
+        gridVisable = !gridVisable;
+    });
+
+    function gridUpdate() {
+        var t1 = performance.now();
+        removeGrid(rectArr);
+        rectArr = []; // reset array
+        drawRects();
+        var t2 = performance.now();
+        console.log("Green took " + (t2 - t1) + " milliseconds.");
+    }
+
+    function drawRects() {
+        sizeValue = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
+        if (sizeValue == NaN || sizeValue == Infinity || sizeValue <= 0) { // some browsers don't sanitize user input
+            console.error("Error: size is not a valid number!", sizeValue);
+            return;
+        }
+        var bounds = map.getBounds();
+        var boundsJ = bounds.toJSON();
+        // console.log(boundsJ);
+        var NE = bounds.getNorthEast();
+        var SW = bounds.getSouthWest();
+        var NW = new google.maps.LatLng(NE.lat(), SW.lng());
+        var SE = new google.maps.LatLng(SW.lat(), NE.lng());
+
+        // console.log('NE', NE.toJSON());
+        // console.log('SW', SW.toJSON());
+        // console.log('NW', NW.toJSON());
+        // console.log('SE', SE.toJSON());
+
+        var height = google.maps.geometry.spherical.computeDistanceBetween(NW, SW) / sizeValue;
+        var width = google.maps.geometry.spherical.computeDistanceBetween(NW, NE) / sizeValue;
+        // console.log('height', height); // in km
+        // console.log('width', width); // in km
+
+        var totalHeight = boundsJ.north - boundsJ.south;
+        var totalWidth = boundsJ.east - boundsJ.west;
+
+        // var addheight = NtoS/height; // cache value to add by
+        // var addwidth = EtoW/width; // cache value to add by
+
+        // var north, east, south, west;
+
+        for (var i = 0; i < height; i++) {
+            for (var j = 0; j < width; j++) {
+
+                var north = ((totalHeight / height) * i);
+                var east = ((totalWidth / width) * j);
+                var south = ((totalHeight / height) * (i + 1));
+                var west = ((totalWidth / width) * (j + 1));
+
+
+                if (north < 0) {
+                    north = boundsJ.north + north;
+                } else {
+                    north = boundsJ.north - north;
+                }
+
+                if (south < 0) {
+                    south = boundsJ.north + south;
+                } else {
+                    south = boundsJ.north - south;
+                }
+
+                if (east < 0) {
+                    east = boundsJ.east + east;
+                } else {
+                    east = boundsJ.east - east;
+                }
+
+                if (west < 0) {
+                    west = boundsJ.east + west;
+                } else {
+                    west = boundsJ.east - west;
+                }
+
+                var rectangleBounds = new google.maps.LatLngBounds({
+                    lat: south,
+                    lng: west
+                }, {
+                    lat: north,
+                    lng: east
+                });
+                // console.log(grid.toString());
+
+                var rectangle = new google.maps.Rectangle({
+                    strokeColor: "#00FF00",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 1,
+                    fillOpacity: 0,
+                    map: map,
+                    bounds: rectangleBounds
+                });
+                rectArr.push(rectangle);
+                getGridImage(rectangle, sizeValue); // add event handler
+            }
+        }
+    }
+
+    function drawRects2() {
+        sizeValue = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
+        var bounds = map.getBounds();
+        var boundsJ = bounds.toJSON();
+        // console.log(boundsJ);
+        var NE = bounds.getNorthEast();
+        var SW = bounds.getSouthWest();
+        var NW = new google.maps.LatLng(NE.lat(), SW.lng());
+        var SE = new google.maps.LatLng(SW.lat(), NE.lng());
+
+        // console.log('NE', NE.toJSON());
+        // console.log('SW', SW.toJSON());
+        // console.log('NW', NW.toJSON());
+        // console.log('SE', SE.toJSON());
+
+        var height = google.maps.geometry.spherical.computeDistanceBetween(NW, SW) / sizeValue;
+        var width = google.maps.geometry.spherical.computeDistanceBetween(NW, NE) / sizeValue;
+        // console.log('height', height); // in km
+        // console.log('width', width); // in km
+
+        var NtoS = boundsJ.north - boundsJ.south;
+        var EtoW = boundsJ.east - boundsJ.west;
+
+        var NS = google.maps.geometry.spherical.computeOffset(NW, sizeValue, 90);
+        var SS = google.maps.geometry.spherical.computeOffset(NW, sizeValue, 180);
+        // console.log(NS.toString(), SS.toString());
+
+        for (var i = 0; i < height; i++) {
+            NE = google.maps.geometry.spherical.computeOffset(NS, i * sizeValue, 180);
+            SW = google.maps.geometry.spherical.computeOffset(SS, i * size, 180);
+
+            // console.log(NE.toString(), SW.toString());
+            for (var a = 0; a < width; a++) {
+                var rectangle = new google.maps.Rectangle();
+                var rectOptions = {
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 1,
+                    fillOpacity: 0,
+                    map: map,
+                    bounds: new google.maps.LatLngBounds(SW, NE)
+                };
+                rectangle.setOptions(rectOptions);
+                rectArr2.push(rectangle);
+                getGridImage(rectangle, sizeValue) // add event handler
+
+                var SW = google.maps.geometry.spherical.computeOffset(SW, sizeValue, 90)
+                var NE = google.maps.geometry.spherical.computeOffset(NE, sizeValue, 90)
+            }
+        }
+    }
+
+    // https://stackoverflow.com/questions/6048975/google-maps-v3-how-to-calculate-the-zoom-level-for-a-given-bounds#13274361
+    function getBoundsZoomLevel(bounds, mapDim) {
+        var WORLD_DIM = { height: 256, width: 256 };
+        var ZOOM_MAX = 21;
+
+        function latRad(lat) {
+            var sin = Math.sin(lat * Math.PI / 180);
+            var radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
+            return Math.max(Math.min(radX2, Math.PI), -Math.PI) / 2;
+        }
+
+        function zoom(mapPx, worldPx, fraction) {
+            return Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);
+        }
+
+        var ne = bounds.getNorthEast();
+        var sw = bounds.getSouthWest();
+
+        var latFraction = (latRad(ne.lat()) - latRad(sw.lat())) / Math.PI;
+
+        var lngDiff = ne.lng() - sw.lng();
+        var lngFraction = ((lngDiff < 0) ? (lngDiff + 360) : lngDiff) / 360;
+
+        var latZoom = zoom(mapDim.height, WORLD_DIM.height, latFraction);
+        var lngZoom = zoom(mapDim.width, WORLD_DIM.width, lngFraction);
+
+        return Math.min(latZoom, lngZoom, ZOOM_MAX);
+    }
+
+
+    function getGridImage(rectangle, gridSizeInKm) {
+        google.maps.event.addListener(rectangle, 'click', function (event) {
+            __getGridURL(rectangle, gridSizeInKm, download);
+        });
+    }
+
+    function __getGridURL(rectangle, gridSizeInKm, callback) {
+        var size = {height: 640, width: 640}; // max = 640 or 800
+        var zoom = getBoundsZoomLevel(rectangle.getBounds(), size)
+
+        var position = rectangle.getBounds().getCenter();
+        maxZoomService.getMaxZoomAtLatLng(position, function (response) {
+            if (response.status !== 'OK') {
+                console.error("Error contacting MaxZoomService", response.status);
+            } else {
+                if (response.zoom < zoom) {
+                    console.warn("Sorry, but the max zoom for this region is: " + response.zoom + ". changed from: ", zoom);
+                    zoom = response.zoom;
+                }
+            }
+
+            var url = 'https://maps.googleapis.com/maps/api/staticmap?center=' + position.toUrlValue() +
+                '&zoom=' + zoom +
+                '&format=png&maptype=' + map.getMapTypeId() +
+                '&size='+size.height+'x'+size.width+'&scale=2' +
+                '&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY';
+            callback(url);
+        });
+    }
+
+    var removeGrid = function (rectangles) {
+        for (var i = rectangles.length - 1; i >= 0; i--) {
+            rectangles[i].setMap(null);
+        }
+    }
+
+    function ajax (url, responseType, callback) {
+        var request = new XMLHttpRequest(); // http://youmightnotneedjquery.com/#request // IE9+
+        request.open('GET', url, true);
+        request.responseType = 'blob';
+        console.log('Requesting:', url);
+        request.onload = function(e) {
+            if (request.status >= 200 && request.status < 400) {
+                // Success!
+                callback(e.target.response);
+            } else {
+                // We reached our target server, but it returned an error
+                console.error("Google Maps API send an Error!: " + request.statusText, request.status);
+                // https://developers.google.com/maps/documentation/static-maps/error-messages
+            }
+        };
+
+        request.onerror = function() {
+            // There was a connection error of some sort
+            console.error("Unable to contact Google Maps API!");
+        };
+        request.send();
+    }
+
+
+    function zipMe() {
+        var progress = document.getElementById ('progress');
+        if (progress) { // Show progress bar
+            progress.max = rectArr.length -1;
+            progress.classList.toggle("hidden");
+        }
+        var zip = new JSZip();
+        var count = 0;
+        for (var i = 0; i < rectArr.length; i++) {
+            __getGridURL(rectArr[i], sizeValue, function (url) {
+                ajax(url, 'blob', function (response) {
+                    console.log('Received #'+count+':', response);
+                    zip.file("map("+count+").png", response);
+                    if (count == rectArr.length -1) { // if the last image is added than download the zip.
+                        if (progress) { // Hide progress bar
+                            progress.classList.toggle("hidden");
+                        }
+                         zip.generateAsync({type:"blob"}).then(function (blob) {
+                            download(blob, "map.zip");
+                        });
+                    }
+                    count++;
+                    if (progress) { // Update progress bar
+                        progress.value = count;
+                    }
+                });
+            });
+        }
+    }
+
+    // EXPORT ALL
+    var exportBtn = document.getElementById('exportBtn');
+    exportBtn.addEventListener('click', function (e) {
+        var limit = 25;
+        // if (rectArr.length > 15) {
+        //     var result = prompt("Please input your own API key or none at all.\nYou can get your API key here: https://developers.google.com/maps/documentation/static-maps/get-api-key");
+        //     if (result !== null) {
+        //         console.log('Using API KEY:', result);
+        //         APIKEY = result;
+        //         zipMe();
+        //     }
+        if (rectArr.length > limit) {
+            alert("Mass downloading is prohibited see Google Maps T&C Section 10.5e:\nhttps://developers.google.com/maps/terms#section_10\nI've set the max number of requests to "+limit+" requests for now.");
+        } else {
+            zipMe();
+        }
+    });
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
+    <script async defer src="jszip/jszip.min.js"></script>
+    <script async defer src="download/download.js"></script>
+</body>
+
+</html>
