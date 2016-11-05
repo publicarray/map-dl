@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "map-dl": "cli/bin/cli.js"
+    "map-dl": "cli/bin/map-dl.js"
   },
   "repository": {
     "type": "git",
