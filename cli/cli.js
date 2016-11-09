@@ -32,6 +32,7 @@ const cli = meow(`
       -o, --output   File-path to save the files
       -k, --apikey   Google Maps API key
       -v, --verbose  Verbose logging
+      -V, --version  Display version number
 
     Example
       $ map-dl "[-27.883,153.531,-27.994,153.284]" --scale 5 --output ~/Desktop/map
@@ -41,7 +42,8 @@ const cli = meow(`
         t: 'type',
         o: 'output',
         k: 'apikey',
-        v: 'verbose'
+        v: 'verbose',
+        V: 'version'
     }
 });
 
