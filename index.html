@@ -137,8 +137,6 @@
             mapTypeId: 'satellite'
         });
 
-        maxZoomService = new google.maps.MaxZoomService();
-
          // Show the lat and lng under the mouse cursor.
         var coordsDiv = document.getElementById('coords');
         map.controls[google.maps.ControlPosition.TOP_CENTER].push(coordsDiv);
@@ -187,29 +185,29 @@
             console.error("Error: size is not a valid number!", sizeValue);
             return;
         }
-        var boundsJ = map.getBounds().toJSON();
-        var rectangles = init(boundsJ, {
+
+        MapDl({
+            boundaries: map.getBounds().toJSON(),
             scale: sizeValue,
-            maptype: map.getMapTypeId()
+            maptype: map.getMapTypeId(),
+            gMap: google,
+            callback: function (rectangle) {
+               var gRectangle = new google.maps.Rectangle({
+                    strokeColor: "#00FF00",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 1,
+                    fillOpacity: 0,
+                    map: map,
+                    bounds: rectangle.gbounds,
+                    url: rectangle.url
+                });
+                rectArr.push(gRectangle);
+                // add event handler
+                google.maps.event.addListener(gRectangle, 'click', function (event) {
+                    download(gRectangle.url)
+                });
+            }
         });
-
-        for (var i = rectangles.length - 1; i >= 0; i--) {
-            var rectangle = new google.maps.Rectangle({
-                strokeColor: "#00FF00",
-                strokeOpacity: 0.8,
-                strokeWeight: 1,
-                fillOpacity: 0,
-                map: map,
-                bounds: new google.maps.LatLngBounds(rectangles[i].bounds.sw, rectangles[i].bounds.ne),
-                url: rectangles[i].url
-            });
-            rectArr.push(rectangle);
-
-            // add event handler
-            google.maps.event.addListener(rectangle, 'click', function (event) {
-                download(rectangle.url)
-            });
-        }
     }
 
     var removeGrid = function (rectangles) {

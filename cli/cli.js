@@ -14,7 +14,7 @@ const downloadFile = function(file_url, output, fileName) {
         response.pipe(file);
         file.on('finish', function() {
             file.close();
-            console.log(file_name + ' downloaded to ' + output);
+            console.log(file_name + ' downloaded to ' + output + file_name);
         });
     }).on('error', function(err) {
         fs.unlink(dest); // Delete the file on error
@@ -27,18 +27,21 @@ const cli = meow(`
       $ map-dl [North, East, South, West]
 
     Options
-      -s, --scale   Scale in km
-      -t, --type    Map Type: roadmap, satellite, terrain or hybrid
-      -o, --output  file-path to save the files
-      --apikey      Google Maps API key
+      -s, --scale    Scale in km
+      -t, --type     Map Type: roadmap, satellite, terrain or hybrid
+      -o, --output   File-path to save the files
+      -k, --apikey   Google Maps API key
+      -v, --verbose  Verbose logging
 
     Example
-      $ map-dl "[-27.883,153.531,-27.994,153.284]" -s5
+      $ map-dl "[-27.883,153.531,-27.994,153.284]" --scale 5 --output ~/Desktop/map
 `, {
     alias: {
         s: 'scale',
         t: 'type',
-        o: 'output'
+        o: 'output',
+        k: 'apikey',
+        v: 'verbose'
     }
 });
 
@@ -51,9 +54,6 @@ if (typeof cli.flags.output == 'undefined') {
     cli.flags.output = '.';
 }
 
-// get images as rectangles
-var rectangles = mapDl(cli.input[0], cli.flags);
-
 // create output folder
 try {
     fs.mkdirSync(cli.flags.output.toString());
@@ -63,7 +63,14 @@ try {
     }
 }
 
-// save images
-for (var i = rectangles.length - 1; i >= 0; i--) {
-    downloadFile(rectangles[i].url, cli.flags.output, 'staticmap ('+i+').png');
-}
+// get images as and download them
+mapDl({
+    boundaries: cli.input[0],
+    scale: cli.flags.scale,
+    maptype: cli.flags.type,
+    apikey: cli.flags.apikey,
+    verbose: cli.flags.verbose,
+    callback: function (rectangle, total) {
+        downloadFile(rectangle.url, cli.flags.output, 'staticmap '+rectangle.x+' '+rectangle.y+'.png');
+    },
+});

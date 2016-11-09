@@ -1,4 +1,20 @@
 'use strict';
+
+var v = false;
+
+function verbose(message, obj) {
+    if (v && typeof obj != 'undefined') {
+        console.log(message, obj);
+    } else if (v) {
+        console.log(message);
+    }
+}
+
+function progress(percentage, total) {
+    console.log(message);
+}
+
+
 function toRadians(num) {
     var pi = Math.PI;
     return (num)*(pi/180);
@@ -72,34 +88,37 @@ function computeDistanceBetween(point1, point2) {
 //         }
 //     }
 
-function getRectangles(bounds, scale, maptype, apikey) {
-    var rectanglesArr = [];
+function getRectangles(bounds, scale, maptype, apikey, gMap, c) {
+    // var rectanglesArr = [];
     var NE = {lat:bounds.north, lng:bounds.east};
     var SW = {lat:bounds.south, lng:bounds.west};
     var NW = {lat:bounds.north, lng:bounds.west};
     var SE = {lat:bounds.south, lng:bounds.east};
 
-    console.log('NE', NE);
-    console.log('SW', SW);
-    console.log('NW', NW);
-    console.log('SE', SE);
+    verbose('NE', NE);
+    verbose('SW', SW);
+    verbose('NW', NW);
+    verbose('SE', SE);
 
     var height = computeDistanceBetween(NW, SW) / scale; // in km
     var width = computeDistanceBetween(NW, NE) / scale; // in km
-    console.log('height', height);
-    console.log('width', width);
+    const totalImages = Math.ceil(height) * Math.ceil(width);
+    var count = 0;
+
+    verbose('height', height);
+    verbose('width', width);
+    verbose('totalImages', totalImages);
 
     var totalHeight = bounds.north - bounds.south; // in lat
     var totalWidth = bounds.east - bounds.west; // in long
-    console.log('totalHeight', totalHeight);
-    console.log('totalWidth', totalWidth);
+    verbose('totalHeight', totalHeight);
+    verbose('totalWidth', totalWidth);
     // var addheight = totalHeight/height; // cache value to add by
     // var addwidth = totalWidth/width; // cache value to add by
-
-
+    var count = 0;
     for (var i = 0; i < height; i++) {
         for (var j = 0; j < width; j++) {
-
+            count++;
             var north = ((totalHeight / height) * i);
             var east = ((totalWidth / width) * j);
             var south = ((totalHeight / height) * (i + 1));
@@ -155,6 +174,9 @@ function getRectangles(bounds, scale, maptype, apikey) {
             // };
 
             var rectangle = {
+                num: count,
+                x: i,
+                y: j,
                 north: north,
                 east: east,
                 south: south,
@@ -179,20 +201,55 @@ function getRectangles(bounds, scale, maptype, apikey) {
                 // getURL(this, maptype, apikey): __getURL(this, maptype, apikey)
 
             };
-            // rectangle.center.toUrlValue
-            console.log(rectangle);
-            console.log(rectangle.center.toUrlValue());
-            rectanglesArr.push(rectangle);
-            __getURL(rectangle, maptype, apikey, function (url) {
-                console.log(url);
-            });
+
+            // create URL
+            var size = {height: 640, width: 640}; // image dimensions // max = 640 or 800
+            if (typeof gMap == 'undefined') {
+                rectangle.url = 'https://maps.googleapis.com/maps/api/staticmap?center=' + rectangle.center.toUrlValue() +
+                    '&zoom=' + getBoundsZoomLevel(rectangle, size, maptype) +
+                    '&format=png&maptype=' + maptype +
+                    '&size='+size.height+'x'+size.width+'&scale=2' +
+                    '&key=' + apikey;
+                verbose(rectangle.url);
+                // rectanglesArr.push(rectangle);
+
+                c(rectangle, totalImages);
+                // count++;
+                // if (count > height + width) {
+                //     console.log("Done!");
+                // }
+            } else {
+                rectangle.gbounds = new gMap.maps.LatLngBounds(rectangle.bounds.sw, rectangle.bounds.ne);
+                getBoundsZoomLevel(rectangle, size, maptype, gMap, function(zoom, rectangle) {
+                    rectangle.url = 'https://maps.googleapis.com/maps/api/staticmap?center=' + rectangle.center.toUrlValue() +
+                        '&zoom=' + zoom +
+                        '&format=png&maptype=' + maptype +
+                        '&size='+size.height+'x'+size.width+'&scale=2' +
+                        '&key=' + apikey;
+                    verbose(rectangle.url);
+                    // rectanglesArr.push(rectangle);
+                    c(rectangle, totalImages);
+                    // count++;
+                    // if (count > height +width) {
+                    //     console.log("Done!");
+                    // }
+                });
+            }
+
+
+            verbose(rectangle);
+            // console.log(rectangle.center.toUrlValue());
+            // rectanglesArr.push(rectangle);
         }
     }
-    return rectanglesArr;
 }
 
 // https://stackoverflow.com/questions/6048975/google-maps-v3-how-to-calculate-the-zoom-level-for-a-given-bounds#13274361
-function getBoundsZoomLevel(bounds, mapDim) {
+function getBoundsZoomLevel(rectangle, mapDim, maptype, gMap, callback) { // if gMap is defined a callback must also be defined
+    // if (typeof mapDim == 'undefined') {
+    //     mapDim = {height: 640, width: 640}; // image dimensions // max = 640 or 800
+    // }
+
     var WORLD_DIM = { height: 256, width: 256 };
     var ZOOM_MAX = 21;
 
@@ -206,8 +263,8 @@ function getBoundsZoomLevel(bounds, mapDim) {
         return Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);
     }
 
-    var ne = bounds.getNorthEast();
-    var sw = bounds.getSouthWest();
+    var ne = rectangle.bounds.ne;
+    var sw = rectangle.bounds.sw;
 
     var latFraction = (latRad(ne.lat) - latRad(sw.lat)) / Math.PI;
 
@@ -217,88 +274,69 @@ function getBoundsZoomLevel(bounds, mapDim) {
     var latZoom = zoom(mapDim.height, WORLD_DIM.height, latFraction);
     var lngZoom = zoom(mapDim.width, WORLD_DIM.width, lngFraction);
 
-    return Math.min(latZoom, lngZoom, ZOOM_MAX);
-}
+    var zoom = Math.min(latZoom, lngZoom, ZOOM_MAX);
 
-function __getURL(rectangle, maptype, apikey, callback) {
-    var size = {height: 640, width: 640}; // max = 640 or 800
-    var zoom = getBoundsZoomLevel(rectangle, size)
+    if (typeof gMap == 'undefined' || maptype == 'roadmap' || maptype == 'terrain') {
+        return zoom;
+    }
 
-    var position = rectangle.center;
-    // // maxZoomService.getMaxZoomAtLatLng(position, function (response) {
-    //     if (response.status !== 'OK') {
-    //         console.error("Error contacting MaxZoomService", response.status);
-    //     } else {
-    //         if (response.zoom < zoom) {
-    //             console.warn("Sorry, but the max zoom for this region is: " + response.zoom + ". changed from: ", zoom);
-    //             zoom = response.zoom;
-    //         }
-    //     }
-    rectangle.url = 'https://maps.googleapis.com/maps/api/staticmap?center=' + position.toUrlValue() +
-            '&zoom=' + zoom +
-            '&format=png&maptype=' + maptype +
-            '&size='+size.height+'x'+size.width+'&scale=2' +
-            '&key=' + apikey;
-    callback(rectangle.url);
-    // });
-}
-
-function init(boundaries, flags, gMap) {
-    console.log("boundaries:", boundaries);
-    console.log("flags:", flags);
-    if (typeof boundaries === 'string' || boundaries instanceof String) {
-        var boundariesArr = boundaries.split(',');
-
-        if (boundaries[0].charAt(0) == '[') {
-            boundariesArr = JSON.parse(boundaries);
+    var maxZoomService = new gMap.maps.MaxZoomService();
+        maxZoomService.getMaxZoomAtLatLng(rectangle.center, function (response) {
+        if (response.status !== 'OK') {
+            console.error("Error contacting MaxZoomService", response.status);
+            verbose(response);
+        } else {
+            if (response.zoom < zoom) {
+                console.warn("Sorry, but the max zoom for this region is: " + response.zoom + ". changed from: ", zoom);
+                zoom = response.zoom;
+            }
         }
-        console.log(boundariesArr);
+        callback(zoom, rectangle);
+    });
+}
+
+function MapDl(options) {
+    var options = {
+        boundaries: options.boundaries || undefined,
+        scale: options.scale * 1000 || 5 * 1000, // scale in km
+        maptype: options.maptype || 'satellite',
+        apikey: options.apikey || 'AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY',
+        gMap: options.gMap || undefined,
+        verbose: options.verbose || false,
+        callback: options.callback || function(rectangle, total){console.log(rectangle.url);(rectangle.num == total)?console.log("Done!"):0;},
+    }
+
+    v = options.verbose;
+
+    if (typeof options.boundaries === 'string' || options.boundaries instanceof String) {
+        var boundariesArr = options.boundaries.split(',');
+
+        if (options.boundaries[0].charAt(0) == '[') {
+            boundariesArr = JSON.parse(options.boundaries);
+        }
+        verbose(boundariesArr);
         if (boundariesArr.length != 4) {
-            console.error("Invalid number of arguments. Got " + boundariesArr.length + " expected 4:", boundaries);
+            console.error("Invalid number of arguments. Got " + boundariesArr.length + " expected 4:", options.boundaries);
             return 1;
         }
 
-        var bounds = {
+        options.boundaries = {
             north: boundariesArr[0],
             east: boundariesArr[1],
             south: boundariesArr[2],
             west: boundariesArr[3],
         }
-    } else {
-        bounds = boundaries;
     }
 
-    if (typeof bounds.north == 'undefined') {
+    if (typeof options.boundaries.north == 'undefined') {
         console.error("Bounds not defined:", bounds.north)
-        return [];
+        return;
     }
 
-    const scale = flags.scale * 1000 || 5 * 1000; // scale in km
-    const maptype = flags.maptype || 'hybrid';
-    const apikey = flags.apikey || 'AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY';
-    console.log(scale);
-
-    return getRectangles(bounds, scale, maptype, apikey);
-    // var mapBounds = new googleMapsClient.maps.LatLngBounds({lat:-27.883, lng:153.284}, {lat:-27.988, lng:153.51})
-
-    // const maxZoomService = new google.maps.MaxZoomService();
-    // googleMapsClient.load(function(google) {
-    //     maxZoomService = new google.maps.MaxZoomService()
-    // });
-
-
-
-
-    // if (sizeValue == NaN || sizeValue == Infinity || sizeValue <= 0) {
-    //     console.error("Error: size is not a valid number!", sizeValue);
-    //     return;
-    // }
-
-
-
-
-
+    verbose("options:", options);
+    getRectangles(options.boundaries, options.scale, options.maptype, options.apikey, options.gMap, options.callback);
 }
+
 if (typeof module != 'undefined') {
-    module.exports = init;
+    module.exports = MapDl;
 }
