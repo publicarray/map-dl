@@ -4,7 +4,7 @@ A tool to download Google map images.
 
 [![npm](https://img.shields.io/npm/v/map-dl.svg?style=flat-square)](https://www.npmjs.com/package/map-dl)
 [![npm](https://img.shields.io/npm/dm/map-dl.svg?style=flat-square)](https://www.npmjs.com/package/map-dl)
-[![license](https://img.shields.io/npm/l/map-dl.svg?style=flat-square)](LICENSE.md)
+[![license](https://img.shields.io/npm/l/map-dl.svg?style=flat-square)](LICENCE.md)
 
 ## Websites
 https://publicarray.github.io/map-dl/2.html
