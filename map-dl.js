@@ -1,9 +1,4 @@
 'use strict';
-
-const fs = require('fs');
-const https = require('https');
-// var spawn = require('child_process').spawn;
-
 function toRadians(num) {
     var pi = Math.PI;
     return (num)*(pi/180);
@@ -25,7 +20,60 @@ function computeDistanceBetween(point1, point2) {
     return R * c;
 }
 
-function getRectangles(bounds, scale, array, maptype, apikey) {
+// function drawRects2() {
+//         sizeValue = document.getElementById('scaleInput').value * 1000 // 1000 = 1 per km
+//         var bounds = map.getBounds();
+//         var boundsJ = bounds.toJSON();
+//         // console.log(boundsJ);
+//         var NE = bounds.getNorthEast();
+//         var SW = bounds.getSouthWest();
+//         var NW = new google.maps.LatLng(NE.lat(), SW.lng());
+//         var SE = new google.maps.LatLng(SW.lat(), NE.lng());
+
+//         // console.log('NE', NE.toJSON());
+//         // console.log('SW', SW.toJSON());
+//         // console.log('NW', NW.toJSON());
+//         // console.log('SE', SE.toJSON());
+
+//         var height = google.maps.geometry.spherical.computeDistanceBetween(NW, SW) / sizeValue;
+//         var width = google.maps.geometry.spherical.computeDistanceBetween(NW, NE) / sizeValue;
+//         // console.log('height', height); // in km
+//         // console.log('width', width); // in km
+
+//         var NtoS = boundsJ.north - boundsJ.south;
+//         var EtoW = boundsJ.east - boundsJ.west;
+
+//         var NS = google.maps.geometry.spherical.computeOffset(NW, sizeValue, 90);
+//         var SS = google.maps.geometry.spherical.computeOffset(NW, sizeValue, 180);
+//         // console.log(NS.toString(), SS.toString());
+
+//         for (var i = 0; i < height; i++) {
+//             NE = google.maps.geometry.spherical.computeOffset(NS, i * sizeValue, 180);
+//             SW = google.maps.geometry.spherical.computeOffset(SS, i * size, 180);
+
+//             // console.log(NE.toString(), SW.toString());
+//             for (var a = 0; a < width; a++) {
+//                 var rectangle = new google.maps.Rectangle();
+//                 var rectOptions = {
+//                     strokeColor: "#FF0000",
+//                     strokeOpacity: 0.8,
+//                     strokeWeight: 1,
+//                     fillOpacity: 0,
+//                     map: map,
+//                     bounds: new google.maps.LatLngBounds(SW, NE)
+//                 };
+//                 rectangle.setOptions(rectOptions);
+//                 rectArr2.push(rectangle);
+//                 getGridImage(rectangle, sizeValue) // add event handler
+
+//                 var SW = google.maps.geometry.spherical.computeOffset(SW, sizeValue, 90)
+//                 var NE = google.maps.geometry.spherical.computeOffset(NE, sizeValue, 90)
+//             }
+//         }
+//     }
+
+function getRectangles(bounds, scale, maptype, apikey) {
+    var rectanglesArr = [];
     var NE = {lat:bounds.north, lng:bounds.east};
     var SW = {lat:bounds.south, lng:bounds.west};
     var NW = {lat:bounds.north, lng:bounds.west};
@@ -82,11 +130,39 @@ function getRectangles(bounds, scale, array, maptype, apikey) {
                 west = bounds.east - west;
             }
 
+            // var rectangle = new function() {
+            //     this.north = north;
+            //     this.east = east;
+            //     this.south = south;
+            //     this.west = west;
+            //     this.bounds = {
+            //         sw: {lat: this.south, lng: this.west},
+            //         ne: {lat: this.north, lng: this.east}
+            //     },
+            //     this.center = {
+            //         lat: (north+south)/2,
+            //         lng: (east+west)/2,
+            //         toUrlValue: function toUrlValue () {
+            //             return Number(this.lat).toFixed(6) + ',' + Number(this.lng).toFixed(6);
+            //         },
+            //     }
+            //     this.getNorthEast = function getNorthEast () {
+            //         return {lat: north, lng: east};
+            //     },
+            //     this.getSouthWest = function getSouthWest () {
+            //         return {lat: south, lng: west};
+            //     }
+            // };
+
             var rectangle = {
                 north: north,
                 east: east,
                 south: south,
                 west: west,
+                bounds: {
+                    sw: {lat: south, lng: west},
+                    ne: {lat: north, lng: east}
+                },
                 center: {
                     lat: (north+south)/2,
                     lng: (east+west)/2,
@@ -100,17 +176,19 @@ function getRectangles(bounds, scale, array, maptype, apikey) {
                 getSouthWest: function getSouthWest () {
                     return {lat: south, lng: west};
                 }
+                // getURL(this, maptype, apikey): __getURL(this, maptype, apikey)
 
             };
             // rectangle.center.toUrlValue
             console.log(rectangle);
             console.log(rectangle.center.toUrlValue());
-            array.push(rectangle);
+            rectanglesArr.push(rectangle);
             __getURL(rectangle, maptype, apikey, function (url) {
                 console.log(url);
             });
         }
     }
+    return rectanglesArr;
 }
 
 // https://stackoverflow.com/questions/6048975/google-maps-v3-how-to-calculate-the-zoom-level-for-a-given-bounds#13274361
@@ -165,51 +243,42 @@ function __getURL(rectangle, maptype, apikey, callback) {
     // });
 }
 
-// Function to download file using HTTP.get
-var downloadFile = function(file_url, output, fileName) {
-    var file_name = fileName || url.parse(file_url).pathname.split('/').pop();
-    var file = fs.createWriteStream(output + '/' + file_name);
-// Todo: check if path exists
-    https.get(file_url, function(response) {
-        response.pipe(file);
-        file.on('finish', function() {
-            file.close();
-            console.log(file_name + ' downloaded to ' + output);
-        });
-    }).on('error', function(err) {
-        fs.unlink(dest); // Delete the file async. (But we don't check the result)
-        console.error(err.message);
-    });
-};
+function init(boundaries, flags, gMap) {
+    console.log("boundaries:", boundaries);
+    console.log("flags:", flags);
+    if (typeof boundaries === 'string' || boundaries instanceof String) {
+        var boundariesArr = boundaries.split(',');
 
-function init(boundaries, flags) {
-    var boundariesArr = boundaries.split(',');
-    console.log(boundaries);
-    console.log(flags);
+        if (boundaries[0].charAt(0) == '[') {
+            boundariesArr = JSON.parse(boundaries);
+        }
+        console.log(boundariesArr);
+        if (boundariesArr.length != 4) {
+            console.error("Invalid number of arguments. Got " + boundariesArr.length + " expected 4:", boundaries);
+            return 1;
+        }
 
-    if (boundaries[0].charAt(0) == '[') {
-        boundariesArr = JSON.parse(boundaries);
-    }
-    console.log(boundariesArr);
-    if (boundariesArr.length != 4) {
-        console.error("Invalid number of arguments. Got " + boundariesArr.length + " expected 4:", boundaries);
-        return 1;
+        var bounds = {
+            north: boundariesArr[0],
+            east: boundariesArr[1],
+            south: boundariesArr[2],
+            west: boundariesArr[3],
+        }
+    } else {
+        bounds = boundaries;
     }
 
-    var bounds = {
-        north: boundariesArr[0],
-        east: boundariesArr[1],
-        south: boundariesArr[2],
-        west: boundariesArr[3],
+    if (typeof bounds.north == 'undefined') {
+        console.error("Bounds not defined:", bounds.north)
+        return [];
     }
 
-    const scale = flags.scale * 1000 || 5 * 1000;
+    const scale = flags.scale * 1000 || 5 * 1000; // scale in km
     const maptype = flags.maptype || 'hybrid';
     const apikey = flags.apikey || 'AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY';
     console.log(scale);
 
-    var rectangles = [];
-    getRectangles(bounds, scale, rectangles, maptype, apikey)
+    return getRectangles(bounds, scale, maptype, apikey);
     // var mapBounds = new googleMapsClient.maps.LatLngBounds({lat:-27.883, lng:153.284}, {lat:-27.988, lng:153.51})
 
     // const maxZoomService = new google.maps.MaxZoomService();
@@ -225,23 +294,11 @@ function init(boundaries, flags) {
     //     return;
     // }
 
-    var output = flags.output.toString() || '.';
 
-    try {
-        fs.mkdirSync(output);
-    } catch (err) {
-        if (err.code != 'EEXIST') {
-            throw err;
-        }
-    }
-
-    for (var i = rectangles.length - 1; i >= 0; i--) {
-        downloadFile(rectangles[i].url, output, 'staticmap ('+i+').png');
-    }
 
 
 
 }
-
-// init('[-27.883,153.531,-27.994,153.284]', {scale:5});
-module.exports = init;
+if (typeof module != 'undefined') {
+    module.exports = init;
+}
