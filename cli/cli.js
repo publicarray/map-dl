@@ -63,6 +63,7 @@ try {
     }
 }
 
+var count = 0;
 // get images as and download them
 mapDl({
     boundaries: cli.input[0],
@@ -71,6 +72,14 @@ mapDl({
     apikey: cli.flags.apikey,
     verbose: cli.flags.verbose,
     callback: function (rectangle, total) {
-        downloadFile(rectangle.url, cli.flags.output, 'staticmap '+rectangle.x+' '+rectangle.y+'.png');
+        count++;
+        if (count == 25) {
+            console.log("Mass downloading is prohibited. \nPlease see Google Maps T&C Section 10.5e: https://developers.google.com/maps/terms#section_10 \nI've set the max number of requests to 25 requests for now.");
+        }
+        if (count <= 25) {
+            downloadFile(rectangle.url, cli.flags.output, 'staticmap '+rectangle.x+' '+rectangle.y+'.png');
+        } else {
+            return;
+        }
     },
 });
