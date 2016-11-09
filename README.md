@@ -21,8 +21,8 @@ npm install -g map-dl
 
 ### Usage
 
-```
-map-dl --help
+```bash
+$ map-dl --help
 
  CLI to Download Google map images
 
