@@ -156,8 +156,8 @@
     var gridBtn = document.getElementById('gridBtn');
     gridBtn.addEventListener('click', function(e) {
         e.target.classList.toggle("on");
-        gridUpdate();
         if (gridVisable == false) {
+            gridUpdate();
             listenerDrag = map.addListener('dragend', gridUpdate);
             listenerZoom = map.addListener('zoom_changed', gridUpdate);
             listenerTextInput = scaleInput.addEventListener('change', gridUpdate);
