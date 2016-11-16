@@ -270,23 +270,27 @@ function MapDl(options) {
 
         var zoom = Math.min(latZoom, lngZoom, ZOOM_MAX);
 
-        if (typeof gMap == 'undefined' || maptype == 'roadmap' || maptype == 'terrain') {
+        if (typeof gMap == 'undefined') {
             return zoom;
-        }
-
-        var maxZoomService = new gMap.maps.MaxZoomService();
-            maxZoomService.getMaxZoomAtLatLng(rectangle.center, function (response) {
-            if (response.status !== 'OK') {
-                console.error("Error contacting MaxZoomService", response.status);
-                verbose(response);
-            } else {
-                if (response.zoom < zoom) {
-                    console.warn("Sorry, but the max zoom for this region is: " + response.zoom + ". changed from: ", zoom);
-                    zoom = response.zoom;
-                }
-            }
+        } else if (typeof gMap == 'undefined' || maptype == 'roadmap' || maptype == 'terrain' || zoom < 10) {
+            verbose("not using the maxZoomService for zoom", zoom); // I expect that zoom 1-9 are all globally available
             callback(zoom, rectangle);
-        });
+        } else {
+            // if maxZoomService is available and the map type is not a roadmap or terrain and the zoom is close enough (10-21) than check with the maxZoomService
+            var maxZoomService = new gMap.maps.MaxZoomService();
+                maxZoomService.getMaxZoomAtLatLng(rectangle.center, function (response) {
+                if (response.status !== 'OK') {
+                    console.error("Error contacting MaxZoomService", response.status);
+                    verbose(response);
+                } else {
+                    if (response.zoom < zoom) {
+                        console.warn("Sorry, but the max zoom for this region is: " + response.zoom + ". changed from: ", zoom);
+                        zoom = response.zoom;
+                    }
+                }
+                callback(zoom, rectangle);
+            });
+        }
     }
 }
 

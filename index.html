@@ -186,7 +186,7 @@
             return;
         }
 
-        MapDl({
+        var mapDlOptions = {
             boundaries: map.getBounds().toJSON(),
             scale: sizeValue,
             maptype: map.getMapTypeId(),
@@ -207,7 +207,8 @@
                     download(gRectangle.url)
                 });
             }
-        });
+        };
+        MapDl(mapDlOptions);
     }
 
     var removeGrid = function (rectangles) {
