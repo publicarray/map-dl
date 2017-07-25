@@ -17,6 +17,16 @@ This version allows downloading multiple images in a grid.
 
 ## The CLI
 
+### Run it just once without installing
+
+https://www.npmjs.com/package/npx
+
+https://medium.com/@maybekatz/introducing-npx-an-npm-package-runner-55f7d4bd282b
+
+```bash
+npx map-dl "[-27.883,153.531,-27.994,153.284]"
+```
+
 ### Installation
 
 ```bash
