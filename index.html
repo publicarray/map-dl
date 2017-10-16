@@ -70,6 +70,12 @@
         color: #000;
     }
 
+    .btn.disabled {
+        background: #ddd;
+        color: #777;
+        cursor: default;
+    }
+
     span.btn {
         padding: 0px 8px;
         cursor: auto;
@@ -117,16 +123,26 @@
 
 <body>
     <div id="UI">
-        <div class="btn" id="exportBtn">Export All</div>
-        <div class="btn" id="gridBtn">Grid</div>
+        <div class="btn disabled" id="exportBtn" title="Download all images shown in the grid)">Export All</div>
+        <div class="btn" id="gridBtn" title="Show grid">Grid</div>
         <span class="btn"><input type="number" id="scaleInput" min="1" max="1000" step="1" value="5">Km</span>
     </div>
     <div id="map"></div>
     <div id="coords"></div>
     <progress id="progress" class="hidden" min="0" value="0"></progress>
     <script>
+    'use strict';
+
     // var APIKEY = '';
     var map;
+    var mapWorker;
+    var sizeValue;
+    var rectArr = [];
+    var limit = 25;
+
+    if (window.Worker) { // Check if Browser supports the Worker api.
+        mapWorker = new Worker("worker.js");
+    }
 
     function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
@@ -148,68 +164,108 @@
         });
     }
 
-    var sizeValue;
-    var rectArr = [];
+    (function setupEventListeners() {
+        var gridVisable = false;
+        var listenerDrag, listenerZoom, listenerTextInput;
+        var gridBtn = document.getElementById('gridBtn');
+        var exportBtn = document.getElementById('exportBtn');
+        gridBtn.addEventListener('click', function(e) {
+            e.target.classList.toggle("on");
+            if (gridVisable == false) {
+                exportBtn.classList.remove("disabled");
 
-    // GRID Buttons
-    var gridVisable = false;
-    var listenerDrag, listenerZoom, listenerTextInput;
-    var gridBtn = document.getElementById('gridBtn');
-    gridBtn.addEventListener('click', function(e) {
-        e.target.classList.toggle("on");
-        if (gridVisable == false) {
-            gridUpdate();
-            listenerDrag = map.addListener('dragend', gridUpdate);
-            listenerZoom = map.addListener('zoom_changed', gridUpdate);
-            listenerTextInput = scaleInput.addEventListener('change', gridUpdate);
-        } else {
-            google.maps.event.removeListener(listenerDrag);
-            google.maps.event.removeListener(listenerZoom);
-            scaleInput.removeEventListener('change', gridUpdate);
-            removeGrid(rectArr);
-        }
-        gridVisable = !gridVisable;
-    });
+                gridUpdate();
+                listenerDrag = map.addListener('dragend', gridUpdate);
+                listenerZoom = map.addListener('zoom_changed', gridUpdate);
+                listenerTextInput = scaleInput.addEventListener('change', gridUpdate);
+            } else {
+                exportBtn.classList.add("disabled");
+                google.maps.event.removeListener(listenerDrag);
+                google.maps.event.removeListener(listenerZoom);
+                scaleInput.removeEventListener('change', gridUpdate);
+                removeGrid(rectArr);
+            }
+            gridVisable = !gridVisable;
+        });
+
+        // EXPORT ALL
+        exportBtn.addEventListener('click', function (e) {
+            if (gridVisable == false) {
+                return
+            }
+            // if (rectArr.length > 15) {
+            //     var result = prompt("Please input your own API key.\nYou can get your API key here: https://developers.google.com/maps/documentation/static-maps/get-api-key");
+            //     if (result !== null) {
+            //         console.log('Using API KEY:', result);
+            //         APIKEY = result;
+            //         zipMe();
+            //     }
+            if (rectArr.length > limit) {
+                alert("Mass downloading is prohibited see Google Maps T&C Section 10.5e:\nhttps://developers.google.com/maps/terms#section_10\nI've set the max number of requests to "+limit+" requests for now.");
+            } else {
+                zipMe();
+            }
+        });
+    })();
 
     function gridUpdate() {
         var t1 = performance.now();
         removeGrid(rectArr);
         rectArr = []; // reset array
-        drawRects();
-        var t2 = performance.now();
-        console.log("Green took " + (t2 - t1) + " milliseconds.");
+        var mapDlOptions = createMapDlOptions();
+
+        if (typeof mapWorker != 'undefined') {
+            mapWorker.postMessage(mapDlOptions);
+            mapWorker.onmessage = function(e) { // 90% of the time is spend here
+                // console.log('Message received from worker', e);
+                var rectangles = e.data;
+                for (var i = rectangles.length - 1; i >= 0; i--) {
+                    var bounds = new google.maps.LatLngBounds(rectangles[i].bounds.sw, rectangles[i].bounds.ne);
+                    drawRectangle(bounds, rectangles[i].url);
+                }
+                var t2 = performance.now();
+                console.log("I completed the grid in " + (t2 - t1) + " milliseconds.");
+            };
+        } else {
+            console.info('WebWorker API not supported!');
+            mapDlOptions.gMap = google;
+            mapDlOptions.callback = function (rectangle) { // 90% of the time is spend here
+                drawRectangle(rectangle.gbounds, rectangle.url);
+            }
+            MapDl(mapDlOptions);
+            var t2 = performance.now();
+            console.log("I completed the grid in " + (t2 - t1) + " milliseconds.");
+        }
     }
 
-    function drawRects() {
+    function drawRectangle(bounds, url) {
+        var gRectangle = new google.maps.Rectangle({
+            strokeColor: "#00FF00",
+            strokeOpacity: 0.8,
+            strokeWeight: 1,
+            fillOpacity: 0,
+            map: map,
+            bounds: bounds,
+            url: url,
+        });
+        rectArr.push(gRectangle);
+        google.maps.event.addListener(gRectangle, 'click', function (event) {
+            download(gRectangle.url)
+        });
+    }
+
+    function createMapDlOptions() {
         sizeValue = document.getElementById('scaleInput').value // km
         if (sizeValue == NaN || sizeValue == Infinity || sizeValue <= 0) { // some browsers don't sanitize user input
             console.error("Error: size is not a valid number!", sizeValue);
             return;
         }
 
-        var mapDlOptions = {
+        return {
             boundaries: map.getBounds().toJSON(),
             scale: sizeValue,
-            maptype: map.getMapTypeId(),
-            gMap: google,
-            callback: function (rectangle) {
-               var gRectangle = new google.maps.Rectangle({
-                    strokeColor: "#00FF00",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 1,
-                    fillOpacity: 0,
-                    map: map,
-                    bounds: rectangle.gbounds,
-                    url: rectangle.url
-                });
-                rectArr.push(gRectangle);
-                // add event handler
-                google.maps.event.addListener(gRectangle, 'click', function (event) {
-                    download(gRectangle.url)
-                });
-            }
+            maptype: map.getMapTypeId()
         };
-        MapDl(mapDlOptions);
     }
 
     var removeGrid = function (rectangles) {
@@ -241,7 +297,6 @@
         request.send();
     }
 
-
     function zipMe() {
         var progress = document.getElementById ('progress');
         if (progress) { // Show progress bar
@@ -269,24 +324,6 @@
             });
         }
     }
-
-    // EXPORT ALL
-    var exportBtn = document.getElementById('exportBtn');
-    exportBtn.addEventListener('click', function (e) {
-        var limit = 25;
-        // if (rectArr.length > 15) {
-        //     var result = prompt("Please input your own API key or none at all.\nYou can get your API key here: https://developers.google.com/maps/documentation/static-maps/get-api-key");
-        //     if (result !== null) {
-        //         console.log('Using API KEY:', result);
-        //         APIKEY = result;
-        //         zipMe();
-        //     }
-        if (rectArr.length > limit) {
-            alert("Mass downloading is prohibited see Google Maps T&C Section 10.5e:\nhttps://developers.google.com/maps/terms#section_10\nI've set the max number of requests to "+limit+" requests for now.");
-        } else {
-            zipMe();
-        }
-    });
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDLGb2-Qs3xFIx2TYQ7yKYLTypgo3TGcoY&callback=initMap&libraries=geometry"></script>
     <script async defer src="map-dl.js"></script>

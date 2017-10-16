@@ -6,7 +6,7 @@ if (typeof module != 'undefined') {
 
 function MapDl(options) {
     if (!(this instanceof MapDl)) {
-        console.log("created new instance");
+        console.log("Created new MapDL instance");
         return new MapDl()(options);
     }
 
