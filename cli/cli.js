@@ -13,7 +13,6 @@ const downloadFile = function(file_url, output, fileName) {
     https.get(file_url, function(response) {
         response.pipe(file);
         file.on('finish', function() {
-            file.close();
             console.log(file_name + ' downloaded to ' + output + file_name);
         });
     }).on('error', function(err) {
