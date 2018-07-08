@@ -2,3 +2,4 @@ jszip
 download
 screenshot
 *.html
+.DS_Store
