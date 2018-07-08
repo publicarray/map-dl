@@ -26,6 +26,6 @@
     "cli"
   ],
   "dependencies": {
-    "meow": "^3.7.0"
+    "meow": "^5.0.0"
   }
 }
